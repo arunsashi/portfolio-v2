@@ -20,7 +20,7 @@ export const DATA_SOURCE = new InjectionToken<DataSourceConfig>('DATA_SOURCE');
 
 export const PLACEHOLDER_DATA_SOURCE: DataSourceConfig = {
   baseUrl: 'data',
-  jsonExt: true,
+  jsonExt: false,
 };
 
 export const API_DATA_SOURCE: DataSourceConfig = {

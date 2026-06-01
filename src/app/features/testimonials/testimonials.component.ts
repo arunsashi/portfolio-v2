@@ -1,0 +1,65 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+
+import { DataService } from '@core/data/data.service';
+import { SectionHeadingComponent } from '@shared/ui/section-heading.component';
+import { RevealDirective } from '@shared/ui/reveal.directive';
+import { DragScrollDirective } from '@shared/ui/drag-scroll.directive';
+
+/**
+ * "What People Say" — matches the Make design's Testimonials.tsx:
+ *   a horizontally swipeable row of NeoCards (quote icon, testimony, divider,
+ *   yellow avatar bubble, name/role, black company pill) + a "Swipe to read
+ *   more" hint. Native scroll-snap replaces embla; arrow keys also work.
+ */
+@Component({
+  selector: 'app-testimonials',
+  imports: [SectionHeadingComponent, RevealDirective, DragScrollDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section id="testimonials" class="container-page overflow-hidden py-12" aria-labelledby="testimonials-heading">
+      <app-section-heading title="What People Say" headingId="testimonials-heading" bg="purple" />
+
+      <ul
+        appDragScroll
+        class="flex snap-x snap-mandatory gap-8 overflow-x-auto pb-4 select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        tabindex="0"
+        aria-label="Testimonials, scroll or drag horizontally to read more"
+      >
+        @for (t of testimonials(); track t.id; let i = $index) {
+          <li
+            appReveal
+            [revealDelay]="(i % 3) + 1"
+            class="flex min-w-0 flex-[0_0_90%] snap-start flex-col rounded-2xl border-4 border-line bg-surface p-8 shadow-[8px_8px_0_0_#000] md:flex-[0_0_60%] lg:flex-[0_0_40%]"
+          >
+            <i class="fa-solid fa-quote-right mb-6 text-4xl text-accent-pink" aria-hidden="true"></i>
+            <p class="mb-8 flex-1 text-xl font-bold leading-relaxed text-ink">"{{ t.quote }}"</p>
+
+            <div class="flex items-center gap-4 border-t-4 border-line pt-6">
+              <span
+                class="grid h-14 w-14 shrink-0 place-items-center rounded-full border-4 border-line bg-accent-yellow text-2xl font-black text-ink"
+                aria-hidden="true"
+                >{{ t.initials }}</span
+              >
+              <div>
+                <p class="text-xl font-black uppercase text-ink">{{ t.author }}</p>
+                <p class="font-bold text-muted">{{ t.role }}</p>
+                <p class="mt-2 inline-block border-2 border-line bg-ink px-2 py-1 text-xs font-black uppercase text-white">
+                  {{ t.company }}
+                </p>
+              </div>
+            </div>
+          </li>
+        }
+      </ul>
+
+      <p class="mt-8 flex animate-pulse items-center justify-center gap-2 text-sm font-black uppercase text-muted">
+        <span aria-hidden="true">←</span> Swipe to read more <span aria-hidden="true">→</span>
+      </p>
+    </section>
+  `,
+})
+export class TestimonialsComponent {
+  private readonly data = inject(DataService);
+  protected readonly testimonials = toSignal(this.data.getTestimonials(), { initialValue: [] });
+}

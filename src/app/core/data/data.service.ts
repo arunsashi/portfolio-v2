@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
+import { catchError, map, Observable } from 'rxjs';
 
 import { DATA_SOURCE } from './data-source.config';
 import type {
@@ -57,7 +57,12 @@ export class DataService {
   }
 
   getBlog(): Observable<BlogPost[]> {
-    return this.http.get<BlogPost[]>(this.url('blog'));
+    const primary = this.source.jsonExt ? this.url('blog') : '/api/blog';
+    const fallback = this.url('blog');
+
+    return this.http.get<BlogPost[]>(primary).pipe(
+      catchError(() => this.http.get<BlogPost[]>(fallback)),
+    );
   }
 
   getTestimonials(): Observable<Testimonial[]> {

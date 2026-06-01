@@ -19,9 +19,9 @@
   "email": "hello@arunsudi.dev",
   "resumeUrl": null,
   "socials": [
-    { "label": "GitHub", "url": "https://github.com/", "icon": "github", "accent": "lavender" },
-    { "label": "LinkedIn", "url": "https://www.linkedin.com/", "icon": "linkedin", "accent": "skyblue" },
-    { "label": "Notion", "url": "https://notion.so/", "icon": "notion", "accent": "peach" },
+    { "label": "GitHub", "url": "https://github.com/arunsashi", "icon": "github", "accent": "lavender" },
+    { "label": "LinkedIn", "url": "https://www.linkedin.com/feed/", "icon": "linkedin", "accent": "skyblue" },
+    { "label": "Notion", "url": "https://www.notion.so/Getting-Started-37125589bf5080a6bb8ee2241dd318d4", "icon": "notion", "accent": "peach" },
     { "label": "My Projects", "url": "https://github.com/", "icon": "projects", "accent": "pink" }
   ]
 }

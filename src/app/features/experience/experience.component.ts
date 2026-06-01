@@ -16,7 +16,7 @@ import type { Client, Experience } from '@core/models';
  */
 @Component({
   selector: 'app-experience',
-  imports: [SectionHeadingComponent, AccentPipe, RevealDirective],
+  imports: [SectionHeadingComponent, RevealDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section id="experience" class="container-page py-12" aria-labelledby="experience-heading">

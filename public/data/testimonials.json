@@ -1,0 +1,20 @@
+[
+  {
+    "id": "t-1",
+    "quote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas laoreet quis tortor eget tristique.",
+    "author": "Andrew Garcia",
+    "role": "Software Solutions Architect",
+    "company": "Fidelity Investments",
+    "initials": "AG",
+    "accent": "purple"
+  },
+  {
+    "id": "t-2",
+    "quote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas laoreet quis tortor eget tristique.",
+    "author": "Chris Nelson",
+    "role": "Engineering Manager",
+    "company": "CFNC",
+    "initials": "CN",
+    "accent": "teal"
+  }
+]
