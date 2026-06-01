@@ -1,0 +1,20 @@
+{
+  "name": "portfolio-api",
+  "version": "0.0.0",
+  "description": "Read-only managed Azure Functions API for the portfolio (Node v4 model).",
+  "private": true,
+  "main": "dist/src/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.1.1",
+    "@azure/functions": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "typescript": "~5.9.2"
+  }
+}

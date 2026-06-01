@@ -1,0 +1,35 @@
+[
+  {
+    "source": "medium",
+    "title": "Building Agentic Workflows with Claude",
+    "url": "https://medium.com/",
+    "publishedAt": "2024-10-01T00:00:00Z",
+    "excerpt": "A deep dive into how I utilize LLM agents and Spec Driven Development to accelerate feature delivery at scale.",
+    "image": null,
+    "tags": ["AI", "Agents"],
+    "accent": "teal",
+    "readingTime": "6 min read"
+  },
+  {
+    "source": "devto",
+    "title": "Why Neo-Brutalism is taking over the Web",
+    "url": "https://dev.to/",
+    "publishedAt": "2024-08-01T00:00:00Z",
+    "excerpt": "Exploring the aesthetic shift towards thick borders, hard shadows, and bold, unapologetic color.",
+    "image": null,
+    "tags": ["Design", "CSS"],
+    "accent": "pink",
+    "readingTime": "5 min read"
+  },
+  {
+    "source": "devto",
+    "title": "Advanced TypeScript Patterns for React",
+    "url": "https://dev.to/",
+    "publishedAt": "2024-06-01T00:00:00Z",
+    "excerpt": "My favorite utility types and generic patterns for building type-safe, scalable React applications.",
+    "image": null,
+    "tags": ["TypeScript", "React"],
+    "accent": "purple",
+    "readingTime": "8 min read"
+  }
+]

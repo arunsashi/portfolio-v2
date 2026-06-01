@@ -1,0 +1,83 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+
+import { DataService } from '@core/data/data.service';
+import { SectionHeadingComponent } from '@shared/ui/section-heading.component';
+import { AccentPipe } from '@shared/ui/accent.pipe';
+import { RevealDirective } from '@shared/ui/reveal.directive';
+import type { Skill } from '@core/models';
+
+/**
+ * "Tech Arsenal" — matches the Make design's Skills card:
+ *   white NeoCard → small rotated colored title badge → wrench + description →
+ *   "Languages:" group (dark chips) → "Frameworks & Tools:" group (light chips).
+ */
+@Component({
+  selector: 'app-skills',
+  imports: [SectionHeadingComponent, AccentPipe, RevealDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section id="skills" class="container-page py-12" aria-labelledby="skills-heading">
+      <app-section-heading title="Tech Arsenal" headingId="skills-heading" bg="pink" />
+      <ul class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        @for (cat of categories(); track cat.id; let i = $index) {
+          <li
+            appReveal="scale"
+            [revealDelay]="(i % 6) + 1"
+            class="hover-lift flex h-full flex-col rounded-2xl border-4 border-line bg-surface p-6 shadow-[6px_6px_0_0_#000]"
+          >
+            <!-- rotated colored title badge -->
+            <h3
+              class="inline-block -rotate-2 self-start border-4 border-line px-3 py-1 text-2xl font-black uppercase tracking-tight text-ink shadow-[2px_2px_0_0_#000]"
+              [style.background]="cat.accent | accent"
+            >
+              {{ cat.content.title }}
+            </h3>
+
+            <p class="mt-3 mb-6 flex items-center gap-2 text-sm font-bold uppercase text-muted">
+              <i class="fa-solid fa-wrench" aria-hidden="true"></i> {{ cat.description }}
+            </p>
+
+            @if (cat.languages.length) {
+              <div class="mb-6">
+                <p class="mb-3 font-black text-ink">Languages:</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (lang of cat.languages; track lang) {
+                    <span
+                      class="border-2 border-line bg-dark px-3 py-1 text-sm font-bold uppercase text-canvas shadow-[2px_2px_0_0_#fff]"
+                    >
+                      {{ lang }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (visibleSkills(cat.skills).length) {
+              <div class="mt-auto">
+                <p class="mb-3 font-black text-ink">Frameworks &amp; Tools:</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (skill of visibleSkills(cat.skills); track skill.id) {
+                    <span
+                      class="border-2 border-line bg-canvas px-2 py-1 text-xs font-bold uppercase text-ink shadow-[2px_2px_0_0_#000] transition-colors hover:bg-accent-yellow"
+                    >
+                      {{ skill.name }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  `,
+})
+export class SkillsComponent {
+  private readonly data = inject(DataService);
+  protected readonly categories = toSignal(this.data.getSkills(), { initialValue: [] });
+
+  protected visibleSkills(skills: Skill[]): Skill[] {
+    return [...skills].filter((s) => s.display).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+}

@@ -1,0 +1,108 @@
+[
+  {
+    "id": "ui",
+    "category": "UI",
+    "description": "User Interface Development",
+    "content": { "title": "UI languages i know", "subtitle": "User Interface Development" },
+    "languages": ["Javascript", "Typescript", "SCSS", "CSS", "HTML"],
+    "order": 1,
+    "accent": "pink",
+    "skills": [
+      { "id": 1, "name": "Angular", "category": "UI", "display": true, "order": 1 },
+      { "id": 2, "name": "Apollo Client", "category": "UI", "display": true, "order": 2 },
+      { "id": 3, "name": "Nrwl", "category": "UI", "display": true, "order": 3 },
+      { "id": 4, "name": "Angular Js", "category": "UI", "display": true, "order": 4 },
+      { "id": 5, "name": "Storybooks", "category": "UI", "display": true, "order": 5 },
+      { "id": 6, "name": "Yarn", "category": "UI", "display": true, "order": 6 },
+      { "id": 7, "name": "NPM", "category": "UI", "display": true, "order": 7 },
+      { "id": 8, "name": "NodeJs", "category": "UI", "display": true, "order": 8 },
+      { "id": 9, "name": "Ionic", "category": "UI", "display": true, "order": 9 },
+      { "id": 10, "name": "Cordova", "category": "UI", "display": true, "order": 10 }
+    ]
+  },
+  {
+    "id": "server",
+    "category": "Server",
+    "description": "Backend/API Development",
+    "content": { "title": "Server languages i know", "subtitle": "Backend/API Development" },
+    "languages": ["Java", "T-SQL", "PL-SQL", "NO-SQL"],
+    "order": 2,
+    "accent": "purple",
+    "skills": [
+      { "id": 11, "name": "Spring Boot", "category": "Server", "display": true, "order": 1 },
+      { "id": 12, "name": "REST", "category": "Server", "display": true, "order": 2 },
+      { "id": 13, "name": "JPA", "category": "Server", "display": true, "order": 3 },
+      { "id": 14, "name": "NestJs", "category": "Server", "display": true, "order": 4 },
+      { "id": 15, "name": "Graph QL", "category": "Server", "display": true, "order": 5 },
+      { "id": 16, "name": "ExpressJs", "category": "Server", "display": true, "order": 6 },
+      { "id": 17, "name": "Hibernate", "category": "Server", "display": true, "order": 7 }
+    ]
+  },
+  {
+    "id": "cicd",
+    "category": "CI / CD",
+    "description": "CI CD Frameworks",
+    "content": { "title": "CI / CD", "subtitle": "CI CD Frameworks" },
+    "languages": [],
+    "order": 3,
+    "accent": "teal",
+    "skills": [
+      { "id": 18, "name": "git", "category": "CI / CD", "display": true, "order": 1 },
+      { "id": 19, "name": "Jenkins", "category": "CI / CD", "display": true, "order": 2 },
+      { "id": 20, "name": "CircleCI", "category": "CI / CD", "display": true, "order": 3 },
+      { "id": 21, "name": "Azure", "category": "CI / CD", "display": true, "order": 4 },
+      { "id": 22, "name": "Bitbucket", "category": "CI / CD", "display": true, "order": 5 }
+    ]
+  },
+  {
+    "id": "containers",
+    "category": "Containers & Artifactory",
+    "description": "Containers and artifactory",
+    "content": { "title": "Containers & Artifactory", "subtitle": "Containers and artifactory" },
+    "languages": [],
+    "order": 4,
+    "accent": "yellow",
+    "skills": [
+      { "id": 23, "name": "Docker", "category": "Containers & Artifactory", "display": true, "order": 1 },
+      { "id": 24, "name": "Verdaccio", "category": "Containers & Artifactory", "display": true, "order": 2 },
+      { "id": 25, "name": "JFrog Artifactory", "category": "Containers & Artifactory", "display": true, "order": 3 },
+      { "id": 26, "name": "Google Container Registry (GCR)", "category": "Containers & Artifactory", "display": true, "order": 4 },
+      { "id": 27, "name": "Elastic Container Registry (ECR)", "category": "Containers & Artifactory", "display": true, "order": 5 }
+    ]
+  },
+  {
+    "id": "cloud",
+    "category": "Databases, Servers & Cloud",
+    "description": "Information on Servers",
+    "content": { "title": "Databases, Servers & Cloud", "subtitle": "Information on Servers" },
+    "languages": [],
+    "order": 5,
+    "accent": "blue",
+    "skills": [
+      { "id": 28, "name": "Amazon Web Services (AWS)", "category": "Databases, Servers & Cloud", "display": true, "order": 1 },
+      { "id": 29, "name": "NGINX", "category": "Databases, Servers & Cloud", "display": true, "order": 2 },
+      { "id": 30, "name": "MongoDB", "category": "Databases, Servers & Cloud", "display": true, "order": 3 },
+      { "id": 31, "name": "Google Cloud Platform (GCP)", "category": "Databases, Servers & Cloud", "display": true, "order": 4 },
+      { "id": 32, "name": "Firebase", "category": "Databases, Servers & Cloud", "display": true, "order": 5 },
+      { "id": 33, "name": "MSSQL", "category": "Databases, Servers & Cloud", "display": true, "order": 6 },
+      { "id": 34, "name": "MySql", "category": "Databases, Servers & Cloud", "display": true, "order": 7 },
+      { "id": 35, "name": "Apache Tomcat", "category": "Databases, Servers & Cloud", "display": true, "order": 8 }
+    ]
+  },
+  {
+    "id": "ai",
+    "category": "AI capabilities",
+    "description": "Artificial Intelligence",
+    "content": { "title": "AI capabilities", "subtitle": "Artificial Intelligence" },
+    "languages": [],
+    "order": 6,
+    "accent": "mint",
+    "skills": [
+      { "id": 36, "name": "Workflows", "category": "AI capabilities", "display": true, "order": 1 },
+      { "id": 37, "name": "Agentic development", "category": "AI capabilities", "display": true, "order": 2 },
+      { "id": 38, "name": "Spec Driven Development", "category": "AI capabilities", "display": true, "order": 3 },
+      { "id": 39, "name": "Claude", "category": "AI capabilities", "display": true, "order": 4 },
+      { "id": 40, "name": "Codex", "category": "AI capabilities", "display": true, "order": 5 }
+    ]
+  }
+]
