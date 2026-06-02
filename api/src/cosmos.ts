@@ -1,20 +1,38 @@
 import { CosmosClient, Database } from '@azure/cosmos';
+import { DefaultAzureCredential } from '@azure/identity';
 
 /**
- * Singleton CosmosClient reused across function invocations (playbook §4).
- * The connection string lives ONLY in SWA Application Settings
- * (COSMOS_CONNECTION_STRING) — never in the repo or client code.
+ * Singleton CosmosClient reused across function invocations.
+ *
+ * Production is KEYLESS: the Function App's managed identity (granted
+ * Cosmos "Data Reader" by the infrastructure repo) authenticates against
+ * COSMOS_ENDPOINT — no keys or connection strings in app settings.
+ *
+ * Local dev may fall back to COSMOS_CONNECTION_STRING (keys), which lives
+ * only in the git-ignored local.settings.json — never in the repo.
  */
 let db: Database | undefined;
 
 export function getDatabase(): Database {
   if (!db) {
+    const databaseName = process.env['COSMOS_DATABASE'] ?? 'portfolio';
+    const endpoint = process.env['COSMOS_ENDPOINT'];
     const connectionString = process.env['COSMOS_CONNECTION_STRING'];
-    if (!connectionString) {
-      throw new Error('COSMOS_CONNECTION_STRING is not configured.');
+
+    let client: CosmosClient;
+    if (endpoint) {
+      // Keyless via managed identity (production) or local az/dev credentials.
+      client = new CosmosClient({ endpoint, aadCredentials: new DefaultAzureCredential() });
+    } else if (connectionString) {
+      // Local dev fallback only.
+      client = new CosmosClient(connectionString);
+    } else {
+      throw new Error(
+        'Cosmos is not configured: set COSMOS_ENDPOINT (keyless) or COSMOS_CONNECTION_STRING (local dev).',
+      );
     }
-    const client = new CosmosClient(connectionString);
-    db = client.database('portfolio');
+
+    db = client.database(databaseName);
   }
   return db;
 }

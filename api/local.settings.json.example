@@ -3,7 +3,9 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "AzureWebJobsStorage": "",
-    "COSMOS_CONNECTION_STRING": "<your-cosmos-connection-string>",
+    "_comment_cosmos": "Production is keyless: set COSMOS_ENDPOINT and authenticate via managed identity (`az login` works locally for RBAC). Use COSMOS_CONNECTION_STRING only as a local-dev fallback.",
+    "COSMOS_ENDPOINT": "https://cosmos-arunsudi-prod.documents.azure.com:443/",
+    "COSMOS_CONNECTION_STRING": "<local-dev-only-optional>",
     "MEDIUM_USER": "arunsashidhar1991",
     "DEVTO_USER": "arun_sashidharsudi_ad804",
     "CONTACT_EMAIL_TO": "<you@example.com>",
