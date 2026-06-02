@@ -11,10 +11,10 @@
     "CONTACT_EMAIL_TO": "<you@example.com>",
     "CONTACT_EMAIL_FROM": "Portfolio Contact <contact@yourdomain.com>",
     "RESEND_API_KEY": "<resend-api-key>",
-    "TWILIO_ACCOUNT_SID": "USf6abeaabf1d127f9a6e4a0c20688fd17",
+    "TWILIO_ACCOUNT_SID": "<twillo-sid>",
     "TWILIO_AUTH_TOKEN": "<twilio-auth-token>",
-    "TWILIO_WHATSAPP_FROM": "whatsapp:+14155238886",
-    "WHATSAPP_TO": "whatsapp:+19194924266",
+    "TWILIO_WHATSAPP_FROM": "whatsapp:<twillo-numebr>",
+    "WHATSAPP_TO": "whatsapp:<recipent-number>",
     "TURNSTILE_SECRET_KEY": "<optional-cloudflare-turnstile-secret>"
   }
 }
