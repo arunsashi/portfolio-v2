@@ -10,6 +10,26 @@ import { firstValueFrom } from 'rxjs';
 
 import { DataService } from '@core/data/data.service';
 import type { ContactRequest } from '@core/models';
+import { environment } from '../../../environments/environment';
+
+interface TurnstileApi {
+  render(
+    el: HTMLElement,
+    opts: {
+      sitekey: string;
+      callback?: (token: string) => void;
+      'error-callback'?: () => void;
+      'expired-callback'?: () => void;
+      theme?: 'light' | 'dark' | 'auto';
+    },
+  ): string;
+  reset(id?: string): void;
+  remove(id?: string): void;
+}
+
+function turnstileApi(): TurnstileApi | undefined {
+  return (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+}
 
 /**
  * "Hire Me!" modal — ports the Make design's HireMeModal.tsx to Angular.
@@ -153,6 +173,10 @@ import type { ContactRequest } from '@core/models';
                 class="absolute -left-[9999px] h-0 w-0 opacity-0"
               />
 
+              @if (turnstileSiteKey) {
+                <div #turnstileEl class="flex justify-center"></div>
+              }
+
               @if (errorMsg(); as msg) {
                 <p class="rounded-md border-2 border-line bg-surface px-3 py-2 text-sm font-bold text-red-700">{{ msg }}</p>
               }
@@ -198,6 +222,13 @@ export class HireMeModalComponent {
   private readonly closeBtn = viewChild<ElementRef<HTMLButtonElement>>('closeBtn');
   private lastFocused: HTMLElement | null = null;
 
+  // Cloudflare Turnstile (anti-spam). Disabled when the site key is empty.
+  protected readonly turnstileSiteKey = environment.turnstileSiteKey;
+  private readonly turnstileEl = viewChild<ElementRef<HTMLElement>>('turnstileEl');
+  private readonly turnstileToken = signal<string | null>(null);
+  private turnstileWidgetId: string | null = null;
+  private turnstileScript: Promise<void> | null = null;
+
   protected fileLabel(): string {
     const n = this.fileCount();
     return n > 0 ? `${n} file(s) selected` : 'Click to upload files or concepts';
@@ -213,6 +244,7 @@ export class HireMeModalComponent {
       const dialog = this.modal()?.nativeElement;
       if (dialog && !dialog.open) dialog.showModal();
       this.closeBtn()?.nativeElement.focus();
+      void this.renderTurnstile();
     });
   }
 
@@ -220,7 +252,73 @@ export class HireMeModalComponent {
     const dialog = this.modal()?.nativeElement;
     if (dialog?.open) dialog.close();
     this.isOpen.set(false);
+    this.removeTurnstile();
     this.lastFocused?.focus();
+  }
+
+  // --- Turnstile helpers -------------------------------------------------
+
+  private loadTurnstileScript(): Promise<void> {
+    if (this.turnstileScript) return this.turnstileScript;
+    this.turnstileScript = new Promise<void>((resolve, reject) => {
+      if (turnstileApi()) {
+        resolve();
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.defer = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Turnstile failed to load'));
+      document.head.appendChild(s);
+    });
+    return this.turnstileScript;
+  }
+
+  private async renderTurnstile(): Promise<void> {
+    if (!this.turnstileSiteKey) return;
+    try {
+      await this.loadTurnstileScript();
+    } catch {
+      return;
+    }
+    const api = turnstileApi();
+    const el = this.turnstileEl()?.nativeElement;
+    if (!api || !el) return;
+
+    this.removeTurnstile();
+    this.turnstileToken.set(null);
+    this.turnstileWidgetId = api.render(el, {
+      sitekey: this.turnstileSiteKey,
+      callback: (token: string) => this.turnstileToken.set(token),
+      'error-callback': () => this.turnstileToken.set(null),
+      'expired-callback': () => this.turnstileToken.set(null),
+    });
+  }
+
+  private resetTurnstile(): void {
+    this.turnstileToken.set(null);
+    const api = turnstileApi();
+    if (api && this.turnstileWidgetId) {
+      try {
+        api.reset(this.turnstileWidgetId);
+      } catch {
+        /* widget may already be gone */
+      }
+    }
+  }
+
+  private removeTurnstile(): void {
+    const api = turnstileApi();
+    if (api && this.turnstileWidgetId) {
+      try {
+        api.remove(this.turnstileWidgetId);
+      } catch {
+        /* widget may already be gone */
+      }
+    }
+    this.turnstileWidgetId = null;
   }
 
   protected onDialogClick(event: MouseEvent): void {
@@ -251,6 +349,15 @@ export class HireMeModalComponent {
       website: `${fd.get('website') ?? ''}`,
     };
 
+    if (this.turnstileSiteKey) {
+      const token = this.turnstileToken();
+      if (!token) {
+        this.errorMsg.set('Please complete the anti-spam check.');
+        return;
+      }
+      payload.turnstileToken = token;
+    }
+
     this.sending.set(true);
     this.errorMsg.set(null);
 
@@ -259,9 +366,12 @@ export class HireMeModalComponent {
       this.sent.set(true);
       form.reset();
       this.fileCount.set(0);
+      this.removeTurnstile();
       queueMicrotask(() => this.closeBtn()?.nativeElement.focus());
     } catch {
       this.errorMsg.set('Could not send your message right now. Please try again in a minute.');
+      // Turnstile tokens are single-use — reset so the user can retry.
+      this.resetTurnstile();
     } finally {
       this.sending.set(false);
     }

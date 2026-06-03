@@ -30,6 +30,7 @@ const SOURCES = [
   { file: 'skills.json', container: 'skills' },
   { file: 'projects.json', container: 'projects' },
   { file: 'experience.json', container: 'experience' },
+  { file: 'testimonials.json', container: 'testimonials' },
 ];
 
 function getClient() {

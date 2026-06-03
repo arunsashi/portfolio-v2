@@ -4,4 +4,6 @@
 export const environment = {
   production: false,
   apiBaseUrl: '/api',
+  // Cloudflare Turnstile site key (public client key). Empty = widget disabled.
+  turnstileSiteKey: '',
 };

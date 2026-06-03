@@ -5,4 +5,6 @@ export interface ContactRequest {
   details: string;
   /** Honeypot field — must stay empty for genuine submissions. */
   website?: string;
+  /** Cloudflare Turnstile token (only sent when the widget is enabled). */
+  turnstileToken?: string;
 }
