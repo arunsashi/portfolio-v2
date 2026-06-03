@@ -40,7 +40,7 @@ import { HireMeModalComponent } from './hire-me-modal.component';
             class="relative rounded-xl border-4 border-line bg-[var(--color-accent-skyblue)] p-8 shadow-[6px_6px_0_0_#000] sm:p-10"
           >
             <h1 id="hero-heading" class="text-4xl font-black uppercase leading-[1.05] text-ink sm:text-5xl">
-              Hey, I'm Arun Sudi.<br />Software<br/>
+              Hey, I'm Arun Sudi.<br />Software
               <span class="underline decoration-4 underline-offset-4 text-accent-deep-magenta"
                 >Engineer.</span
               >

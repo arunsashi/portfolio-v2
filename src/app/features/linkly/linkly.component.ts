@@ -56,6 +56,8 @@ export class LinklyComponent {
         return 'fa-brands fa-github';
       case 'linkedin':
         return 'fa-brands fa-linkedin-in';
+      case 'instagram':
+        return 'fa-brands fa-instagram';
       case 'notion':
         return 'fa-regular fa-newspaper';
       case 'projects':
