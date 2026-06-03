@@ -1,13 +1,17 @@
 import { InjectionToken } from '@angular/core';
 
+import { environment } from '../../../environments/environment';
+
 /**
  * Where the DataService reads from.
  *
- * Placeholder phase (now): static JSON in `public/data/*.json`
+ * Placeholder phase: static JSON in `public/data/*.json`
  *   -> { baseUrl: 'data', jsonExt: true } gives `data/profile.json`.
  *
- * Live phase (playbook step 4): the managed Azure Functions API
- *   -> { baseUrl: '/api', jsonExt: false } gives `/api/profile`.
+ * Live phase (current): the Azure Functions API at environment.apiBaseUrl.
+ *   - dev:  '/api'  (proxied to the local Functions host)
+ *   - prod: the standalone Function App's absolute URL (cross-origin)
+ *   -> gives `<apiBaseUrl>/profile`.
  *
  * Swapping data sources is a one-line provider change in app.config.ts.
  */
@@ -24,6 +28,6 @@ export const PLACEHOLDER_DATA_SOURCE: DataSourceConfig = {
 };
 
 export const API_DATA_SOURCE: DataSourceConfig = {
-  baseUrl: '/api',
+  baseUrl: environment.apiBaseUrl,
   jsonExt: false,
 };

@@ -1,0 +1,7 @@
+// Default (development) environment.
+// `ng serve` proxies /api -> the local Functions host (see proxy.conf.json),
+// so a relative base works locally. The production file replaces this.
+export const environment = {
+  production: false,
+  apiBaseUrl: '/api',
+};
