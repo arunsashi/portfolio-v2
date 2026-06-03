@@ -5,6 +5,7 @@ import { catchError, map, Observable, of } from 'rxjs';
 import { DATA_SOURCE } from './data-source.config';
 import type {
   BlogPost,
+  ContactRequest,
   Experience,
   Profile,
   Project,
@@ -64,6 +65,11 @@ export class DataService {
 
   getTestimonials(): Observable<Testimonial[]> {
     return this.http.get<Testimonial[]>(this.url('testimonials'));
+  }
+
+  /** Submit the contact form (the one write endpoint). */
+  submitContact(payload: ContactRequest): Observable<void> {
+    return this.http.post<void>(this.url('contact'), payload);
   }
 }
 

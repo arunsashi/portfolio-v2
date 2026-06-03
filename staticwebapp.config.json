@@ -11,7 +11,7 @@
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://cdn-images-1.medium.com https://miro.medium.com https://media.dev.to https://media2.dev.to; connect-src 'self' https://featureassets.org https://prodregistryv2.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://cdn-images-1.medium.com https://miro.medium.com https://media.dev.to https://media2.dev.to; connect-src 'self' https://func-arunsudi-prod.azurewebsites.net https://featureassets.org https://prodregistryv2.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
   },
   "responseOverrides": {
     "404": { "rewrite": "/index.html", "statusCode": 200 }

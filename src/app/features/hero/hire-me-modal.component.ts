@@ -6,8 +6,10 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+
+import { DataService } from '@core/data/data.service';
+import type { ContactRequest } from '@core/models';
 
 /**
  * "Hire Me!" modal — ports the Make design's HireMeModal.tsx to Angular.
@@ -183,7 +185,7 @@ import { firstValueFrom } from 'rxjs';
   `,
 })
 export class HireMeModalComponent {
-  private readonly http = inject(HttpClient);
+  private readonly data = inject(DataService);
 
   protected readonly isOpen = signal(false);
   protected readonly sent = signal(false);
@@ -241,7 +243,7 @@ export class HireMeModalComponent {
 
     const form = event.target as HTMLFormElement;
     const fd = new FormData(form);
-    const payload = {
+    const payload: ContactRequest = {
       name: `${fd.get('name') ?? ''}`,
       email: `${fd.get('email') ?? ''}`,
       subject: `${fd.get('subject') ?? ''}`,
@@ -253,7 +255,7 @@ export class HireMeModalComponent {
     this.errorMsg.set(null);
 
     try {
-      await firstValueFrom(this.http.post('/api/contact', payload));
+      await firstValueFrom(this.data.submitContact(payload));
       this.sent.set(true);
       form.reset();
       this.fileCount.set(0);

@@ -4,3 +4,4 @@ export * from './project.model';
 export * from './experience.model';
 export * from './blog.model';
 export * from './testimonial.model';
+export * from './contact.model';
