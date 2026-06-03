@@ -6,6 +6,10 @@ name: Deploy web (Static Web App)
 #
 # Required repo secret:
 #   AZURE_STATIC_WEB_APPS_API_TOKEN  - SWA deployment token (from infra outputs)
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID  - OIDC login (to tag the SWA)
+# Optional repo variables:
+#   AZURE_STATIC_WEB_APP_NAME  - defaults to swa-arunsudi-prod
+#   AZURE_RESOURCE_GROUP       - defaults to rg-portfolio-prod
 
 on:
   push:
@@ -23,6 +27,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  id-token: write   # OIDC login so the CLI can tag the SWA resource
   contents: write   # bump version in package.json + push the release tag back to main
 
 concurrency:
@@ -82,6 +87,26 @@ jobs:
           output_location: ''
           skip_app_build: true
           skip_api_build: true
+
+      - name: Azure login (OIDC)
+        if: success()
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Stamp the released version onto the Static Web App as a resource tag
+      # (merge = keep the infra-managed tags).
+      - name: Tag Static Web App with version
+        if: success()
+        env:
+          SWA: ${{ vars.AZURE_STATIC_WEB_APP_NAME || 'swa-arunsudi-prod' }}
+          RG: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-portfolio-prod' }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          rid="$(az staticwebapp show -n "$SWA" -g "$RG" --query id -o tsv)"
+          az tag update --resource-id "$rid" --operation merge --tags version="$VERSION"
 
       # Persist the bump only after a successful deploy. [skip ci] stops this
       # commit from re-triggering the workflow.

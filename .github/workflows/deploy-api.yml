@@ -8,6 +8,7 @@ name: Deploy API (Function App)
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
 # Required repo variable:
 #   AZURE_FUNCTIONAPP_NAME  - the Function App name from infra outputs
+#   AZURE_RESOURCE_GROUP    - optional; defaults to rg-portfolio-prod
 
 on:
   push:
@@ -70,6 +71,19 @@ jobs:
         with:
           app-name: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
           package: api
+
+      # Stamp the released version onto the Function App as a resource tag
+      # (merge = keep the infra-managed tags). az is already authenticated by
+      # the OIDC login above.
+      - name: Tag Function App with version
+        if: success()
+        env:
+          FUNCTIONAPP: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
+          RG: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-portfolio-prod' }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          rid="$(az functionapp show -n "$FUNCTIONAPP" -g "$RG" --query id -o tsv)"
+          az tag update --resource-id "$rid" --operation merge --tags version="$VERSION"
 
       # Persist the bump only after a successful deploy. [skip ci] stops this
       # commit from re-triggering the workflow.
