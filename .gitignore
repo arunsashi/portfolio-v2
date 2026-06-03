@@ -9,8 +9,6 @@
 
 # Node modules and dependency files
 /node_modules/
-/package-lock.json
-/yarn.lock
 /public/data
 # Environment files
 /.env
@@ -41,3 +39,5 @@ yarn-error.log*
 !/_names.txt
 
 !/_tsc.log
+/data/seed/node_modules
+/data/seed/package-lock.json
