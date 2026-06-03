@@ -7,7 +7,7 @@ import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from 
 import { provideHttpClient, withFetch } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { DATA_SOURCE, PLACEHOLDER_DATA_SOURCE } from '@core/data/data-source.config';
+import { DATA_SOURCE, API_DATA_SOURCE } from '@core/data/data-source.config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -19,7 +19,6 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'top' }),
     ),
     provideHttpClient(withFetch()),
-    // Swap to API_DATA_SOURCE once the /api Functions are live (playbook step 4).
-    { provide: DATA_SOURCE, useValue: PLACEHOLDER_DATA_SOURCE },
+    { provide: DATA_SOURCE, useValue: API_DATA_SOURCE},
   ],
 };

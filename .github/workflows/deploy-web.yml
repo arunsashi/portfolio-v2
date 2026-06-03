@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # bump version in package.json + push the release tag back to main
 
 concurrency:
   group: deploy-web-${{ github.ref }}
@@ -38,6 +38,8 @@ jobs:
     environment: prod
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so the release commit can rebase/push cleanly
 
       - uses: actions/setup-node@v4
         with:
@@ -45,6 +47,28 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # UI version bump from the triggering commit message:
+      #   major:/overhaul: (or BREAKING CHANGE) -> major   (Angular upgrade / overhaul)
+      #   feat:                                  -> minor   (feature)
+      #   anything else                          -> patch   (small fix)
+      - name: Determine and apply UI version bump
+        id: ver
+        run: |
+          msg="$(git log -1 --pretty=%B)"
+          if printf '%s' "$msg" | grep -qiE '^(major|overhaul)(\(.+\))?!?:|breaking change'; then
+            bump=major
+          elif printf '%s' "$msg" | grep -qiE '^feat(\(.+\))?!?:'; then
+            bump=minor
+          else
+            bump=patch
+          fi
+          echo "Commit: $msg"
+          echo "Bump type: $bump"
+          npm version "$bump" --no-git-tag-version >/dev/null
+          v="$(node -p "require('./package.json').version")"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "UI version is now $v"
 
       - run: npm run build -- --configuration production
 
@@ -58,3 +82,17 @@ jobs:
           output_location: ''
           skip_app_build: true
           skip_api_build: true
+
+      # Persist the bump only after a successful deploy. [skip ci] stops this
+      # commit from re-triggering the workflow.
+      - name: Commit version bump and tag
+        if: success()
+        run: |
+          v="${{ steps.ver.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(release): ui v$v [skip ci]"
+          git pull --rebase origin main
+          git tag -a "ui-v$v" -m "ui v$v"
+          git push --follow-tags origin HEAD:main
