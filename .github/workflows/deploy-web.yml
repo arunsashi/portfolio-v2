@@ -32,6 +32,10 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # Deploy (and use the prod environment + its secrets) only on main.
+    # Push already filters to main; this also blocks workflow_dispatch from other branches.
+    if: github.ref == 'refs/heads/main'
+    environment: prod
     steps:
       - uses: actions/checkout@v4
 
