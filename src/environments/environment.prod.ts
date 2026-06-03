@@ -9,4 +9,8 @@ export const environment = {
   // enable the widget; must pair with TURNSTILE_SECRET_KEY on the Function App.
   // Empty = widget disabled (and the API must also leave the secret empty).
   turnstileSiteKey: '0x4AAAAAADeLwq5pZ3UmaYGN',
+  // Statsig CLIENT key. The deploy-web workflow replaces this placeholder with
+  // the STATSIG_CLIENT_KEY secret at build time. If left as-is / empty, feature
+  // flags are disabled and all gates fail safe (OFF).
+  statsigClientKey: '__STATSIG_CLIENT_KEY__',
 };

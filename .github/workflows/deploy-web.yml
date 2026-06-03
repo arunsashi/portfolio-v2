@@ -7,6 +7,7 @@ name: Deploy web (Static Web App)
 # Required repo secret:
 #   AZURE_STATIC_WEB_APPS_API_TOKEN  - SWA deployment token (from infra outputs)
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID  - OIDC login (to tag the SWA)
+#   STATSIG_CLIENT_KEY  - public Statsig client key, injected into the build
 # Optional repo variables:
 #   AZURE_STATIC_WEB_APP_NAME  - defaults to swa-arunsudi-prod
 #   AZURE_RESOURCE_GROUP       - defaults to rg-portfolio-prod
@@ -75,6 +76,14 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "UI version is now $v"
 
+      # Inject the public Statsig client key from the secret into the prod
+      # environment file. Empty secret -> placeholder cleared -> flags disabled.
+      - name: Inject Statsig client key
+        env:
+          STATSIG_CLIENT_KEY: ${{ secrets.STATSIG_CLIENT_KEY }}
+        run: |
+          sed -i "s|__STATSIG_CLIENT_KEY__|${STATSIG_CLIENT_KEY}|" src/environments/environment.prod.ts
+
       - run: npm run build -- --configuration production
 
       - name: Deploy to Azure Static Web Apps
@@ -116,6 +125,9 @@ jobs:
           v="${{ steps.ver.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Discard the build-time key injection so it isn't committed and
+          # doesn't block the rebase.
+          git checkout -- src/environments/environment.prod.ts
           git add package.json package-lock.json
           git commit -m "chore(release): ui v$v [skip ci]"
           git pull --rebase origin main

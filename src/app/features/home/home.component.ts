@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
+import { FeatureFlagService } from '@core/feature-flags/feature-flag.service';
 import { HeroComponent } from '@features/hero/hero.component';
 import { TickerComponent } from '@features/ticker/ticker.component';
 import { LinklyComponent } from '@features/linkly/linkly.component';
@@ -39,8 +40,13 @@ import { FooterComponent } from '@shared/layout/footer.component';
     <app-blog />
     <app-experience />
     <app-projects />
-    <app-testimonials />
+    @if (!flags.isEnabled('show_testimonials')) {
+      <app-testimonials />
+    }
     <app-footer />
   `,
 })
-export class HomeComponent {}
+export class HomeComponent {
+  // Gate "show_testimonials": when ON, hide the testimonials section.
+  protected readonly flags = inject(FeatureFlagService);
+}

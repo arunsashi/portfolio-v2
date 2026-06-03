@@ -6,4 +6,6 @@ export const environment = {
   apiBaseUrl: '/api',
   // Cloudflare Turnstile site key (public client key). Empty = widget disabled.
   turnstileSiteKey: '',
+  // Statsig CLIENT key. Empty in dev = feature flags disabled (fail safe).
+  statsigClientKey: '',
 };

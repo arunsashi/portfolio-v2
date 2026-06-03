@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { format, parseISO } from 'date-fns';
 
 import { DataService } from '@core/data/data.service';
+import { FeatureFlagService } from '@core/feature-flags/feature-flag.service';
 import { SectionHeadingComponent } from '@shared/ui/section-heading.component';
 import { AccentPipe } from '@shared/ui/accent.pipe';
 import { RevealDirective } from '@shared/ui/reveal.directive';
@@ -48,9 +49,9 @@ import type { Client, Experience } from '@core/models';
                 <button
                   type="button"
                   class="flex flex-1 items-start gap-3 text-left"
-                  [class.cursor-default]="!clientCount(job)"
-                  [attr.aria-expanded]="clientCount(job) ? isJobOpen(i) : null"
-                  [attr.aria-controls]="clientCount(job) ? 'job-panel-' + i : null"
+                  [class.cursor-default]="!clientCount(job) || altArchive()"
+                  [attr.aria-expanded]="clientCount(job) && !altArchive() ? isJobOpen(i) : null"
+                  [attr.aria-controls]="clientCount(job) && !altArchive() ? 'job-panel-' + i : null"
                   (click)="toggleJob(i, job)"
                 >
                   <span class="min-w-0">
@@ -69,7 +70,7 @@ import type { Client, Experience } from '@core/models';
                   >
                     {{ period(job.from, job.to) }}
                   </span>
-                  @if (clientCount(job); as count) {
+                  @if (!altArchive() && clientCount(job); as count) {
                     <button
                       type="button"
                       class="inline-flex items-center gap-2 rounded-md border-2 border-line bg-accent-pink px-3 py-1 text-xs font-bold text-ink"
@@ -89,7 +90,7 @@ import type { Client, Experience } from '@core/models';
               </header>
 
               <!-- clients (grouped), shown when the employer is expanded -->
-              @if (clientCount(job) && isJobOpen(i)) {
+              @if (!altArchive() && clientCount(job) && isJobOpen(i)) {
                 <div [id]="'job-panel-' + i" class="border-t-4 border-dashed border-line p-4 sm:p-5">
                   <h4 class="mb-4 text-md font-black uppercase text-brand">Client(s)</h4>
                   <div class="space-y-5">
@@ -166,7 +167,14 @@ import type { Client, Experience } from '@core/models';
 })
 export class ExperienceComponent {
   private readonly data = inject(DataService);
+  private readonly flags = inject(FeatureFlagService);
   protected readonly roles = toSignal(this.data.getExperience(), { initialValue: [] });
+
+  /** Gate "alternative_work_archive": when ON, hide the clients pill and
+   *  disable expanding the employer cards. */
+  protected altArchive(): boolean {
+    return this.flags.isEnabled('alternative_work_archive');
+  }
 
   private readonly openJob = signal(-1);
   private readonly openProjects = signal<ReadonlySet<string>>(new Set());
@@ -198,7 +206,7 @@ export class ExperienceComponent {
   }
 
   protected toggleJob(i: number, job: Experience): void {
-    if (!this.clientCount(job)) return;
+    if (!this.clientCount(job) || this.altArchive()) return;
     const wasOpen = this.openJob() === i;
     this.openJob.set(wasOpen ? -1 : i);
 
