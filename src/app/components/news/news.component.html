@@ -1,0 +1,123 @@
+<main class="container-page py-14">
+
+  <!-- back link -->
+  <a
+    routerLink="/"
+    class="inline-flex items-center gap-2 font-mono text-sm font-bold uppercase tracking-wide text-ink hover:text-brand"
+  >
+    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    Back to home
+  </a>
+
+  <!-- page header -->
+  <header class="mt-8 mb-10" appReveal="left">
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <span class="inline-block -rotate-1 border-4 border-line bg-accent-yellow px-3 py-1 font-mono text-xs font-bold uppercase shadow-hard-sm">
+        Updated Jun 2026
+      </span>
+    </div>
+
+    <h1 class="text-5xl font-black uppercase tracking-tighter leading-none sm:text-6xl">
+      WHAT'S<br />
+      <span class="text-brand">BUZZING</span>
+    </h1>
+    <p class="mt-4 max-w-xl text-muted leading-relaxed">
+      Latest insights in software development, security &amp; markets — curated from across the web.
+      Click any card to read the source.
+    </p>
+  </header>
+
+  <!-- category filter chips -->
+  <div
+    class="mb-10 flex flex-wrap gap-3"
+    role="group"
+    aria-label="Filter by category"
+    appReveal
+  >
+    @for (opt of filterOptions; track opt.key) {
+      <button
+        type="button"
+        (click)="setFilter(opt.key)"
+        [attr.aria-pressed]="activeFilter() === opt.key"
+        class="flex cursor-pointer items-center gap-2 border-4 border-line px-4 py-2 font-mono text-sm font-bold uppercase tracking-wide shadow-hard-sm transition-transform active:translate-y-0.5"
+        [class]="activeFilter() === opt.key
+          ? 'bg-ink text-canvas'
+          : 'bg-surface text-ink hover:bg-accent-yellow'"
+      >
+        <i [class]="opt.icon" aria-hidden="true"></i>
+        {{ opt.label }}
+        <span class="ml-0.5 opacity-60">({{ categoryCount()[opt.key] }})</span>
+      </button>
+    }
+  </div>
+
+  <!-- card grid -->
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    @for (item of filteredItems(); track item.id) {
+      <article
+        appReveal
+        class="group flex flex-col border-4 border-line bg-surface shadow-hard transition-shadow hover:shadow-hard-lg"
+      >
+        <!-- colored top bar -->
+        <div
+          class="flex items-center justify-between border-b-4 border-line px-4 py-3"
+          [style.background]="item.accent | accent"
+        >
+          <span class="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider">
+            <i [class]="categoryIcon(item.category)" aria-hidden="true"></i>
+            {{ item.categoryLabel }}
+          </span>
+          <time [dateTime]="item.date" class="font-mono text-xs">
+            {{ item.date | date: 'MMM d, yyyy' }}
+          </time>
+        </div>
+
+        <!-- card body -->
+        <div class="flex flex-1 flex-col gap-3 p-5">
+          <h2 class="text-lg font-black leading-snug">{{ item.title }}</h2>
+          <p class="flex-1 text-sm leading-relaxed text-muted">{{ item.summary }}</p>
+
+          <!-- tags -->
+          <div class="flex flex-wrap gap-1.5" aria-label="Tags">
+            @for (tag of item.tags; track tag) {
+              <span class="border-2 border-line px-2 py-0.5 font-mono text-[11px]">{{ tag }}</span>
+            }
+          </div>
+
+          <!-- source link -->
+          @if (item.sourceUrl) {
+            <a
+              [href]="item.sourceUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-1 inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase text-brand hover:underline"
+            >
+              <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+              {{ item.sourceName ?? 'Read source' }}
+            </a>
+          }
+        </div>
+      </article>
+    }
+
+    @if (filteredItems().length === 0) {
+      <p class="col-span-full font-mono text-sm text-muted">No items in this category yet.</p>
+    }
+  </div>
+
+  <!-- footer note -->
+  <footer class="mt-16 border-t-4 border-line pt-6">
+    <p class="font-mono text-xs text-muted">
+      <i class="fa-solid fa-database mr-1.5" aria-hidden="true"></i>
+      Generated
+      @if (generatedAt()) {
+        {{ generatedAt() | date: 'MMMM d, yyyy' }}
+      }
+      &middot; Auto-refresh is on the roadmap.
+    </p>
+    <p class="mt-2 font-mono text-xs text-muted/60">
+      Market information is for informational purposes only and does not constitute financial advice.
+    </p>
+  </footer>
+
+</main>

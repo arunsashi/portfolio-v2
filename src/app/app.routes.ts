@@ -14,5 +14,11 @@ export const routes: Routes = [
         (m) => m.ProjectDetailComponent,
       ),
   },
+  {
+    path: 'news',
+    title: "What's Buzzing — Arun Sudi",
+    loadComponent: () =>
+      import('@features/news/news.component').then((m) => m.NewsComponent),
+  },
   { path: '**', redirectTo: '' },
 ];

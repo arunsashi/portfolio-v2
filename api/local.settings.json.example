@@ -3,6 +3,8 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "AzureWebJobsStorage": "",
+    "_comment_anthropic": "Required for the news-refresh timer. Generate a key at console.anthropic.com.",
+    "ANTHROPIC_API_KEY": "",
     "_comment_cosmos": "Production is keyless: set COSMOS_ENDPOINT and authenticate via managed identity (`az login` works locally for RBAC). Use COSMOS_CONNECTION_STRING only as a local-dev fallback.",
     "COSMOS_ENDPOINT": "https://cosmos-arunsudi-prod.documents.azure.com:443/",
     "COSMOS_CONNECTION_STRING": "<local-dev-only-optional>",

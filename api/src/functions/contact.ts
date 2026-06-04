@@ -142,15 +142,19 @@ async function sendEmailNotification(payload: ContactRequest, ctx: InvocationCon
   }
 
   const text = [
-    'New contact request from portfolio',
+    'New portfolio enquiry',
     '',
-    `Name: ${payload.name}`,
-    `Email: ${payload.email}`,
+    `From:    ${payload.name}`,
+    `Email:   ${payload.email}`,
     `Subject: ${payload.subject}`,
     '',
-    'Details:',
+    'Message:',
     payload.details,
+    '',
+    '— Sent from arunsudi.dev. Reply directly to respond.',
   ].join('\n');
+
+  const html = renderEmailHtml(payload);
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -162,8 +166,9 @@ async function sendEmailNotification(payload: ContactRequest, ctx: InvocationCon
       from,
       to: [to],
       reply_to: payload.email,
-      subject: `[Portfolio] ${payload.subject}`,
+      subject: `New enquiry from ${payload.name} — ${payload.subject}`,
       text,
+      html,
     }),
   });
 

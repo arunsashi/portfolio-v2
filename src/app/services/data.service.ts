@@ -5,6 +5,7 @@ import type {
   BlogPost,
   ContactRequest,
   Experience,
+  NewsReport,
   Profile,
   Project,
   ProjectType,
@@ -64,6 +65,12 @@ export class DataService {
 
   getTestimonials(): Observable<Testimonial[]> {
     return this.http.get<Testimonial[]>(this.url('testimonials'));
+  }
+
+  getNews(): Observable<NewsReport> {
+    return this.http
+      .get<NewsReport>(this.url('news'))
+      .pipe(catchError(() => of<NewsReport>({ generatedAt: '', items: [] })));
   }
 
   /** Submit the contact form (the one write endpoint). */
