@@ -53,8 +53,8 @@ export async function news(
 
     return {
       status: 200,
-      // 15 min (was 1h) so vote counts on Latest don't lag too far.
-      headers: { 'Cache-Control': 'public, max-age=900' },
+      // 5 min — vote counts are visitor-facing social proof; keep them fresh.
+      headers: { 'Cache-Control': 'public, max-age=300' },
       jsonBody: report,
     };
   } catch (err: unknown) {

@@ -21,20 +21,17 @@ export class FeatureFlagService {
   // Bumped when Statsig finishes loading so template reads of isEnabled()
   // re-evaluate (zoneless-friendly reactive dependency).
   private readonly revision = signal(0);
-  private readonly devOverrides = signal<Partial<Record<string, boolean>>>({});
 
   constructor() {
     this.statsig?.isLoading$.pipe(takeUntilDestroyed()).subscribe((loading) => {
       if (!loading) this.revision.update((r) => r + 1);
     });
+
   }
 
   /** True only when the gate is explicitly ON. Unknown/blocked => false. */
   isEnabled(gate: string): boolean {
     this.revision(); // reactive dependency
-
-    const override = this.devOverrides()[gate];
-    if (override !== undefined) return override;
 
     if (!this.statsig) return false;
     try {
@@ -44,8 +41,4 @@ export class FeatureFlagService {
     }
   }
 
-  /** Local-only override for previewing gated sections during development. */
-  setForDev(gate: string, value: boolean): void {
-    this.devOverrides.update((g) => ({ ...g, [gate]: value }));
-  }
 }

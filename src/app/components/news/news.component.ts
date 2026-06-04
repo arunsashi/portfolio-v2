@@ -176,10 +176,14 @@ export class NewsComponent implements OnDestroy {
     return this.votesSvc.myVote(itemId);
   }
 
-  /** Server count + this session's optimistic adjustment, floored at 0. */
+  /** Server count + this session's optimistic adjustment, floored at 0.
+   *  The visitor's own (localStorage) vote always counts as at least 1, so a
+   *  refresh never shows a number that contradicts their pressed thumb while
+   *  the cached server count catches up. */
   protected voteCount(item: NewsItem, dir: NewsVoteDirection): number {
     const base = (dir === 'up' ? item.votesUp : item.votesDown) ?? 0;
-    return Math.max(0, base + this.votesSvc.delta(item.id, dir));
+    const count = Math.max(0, base + this.votesSvc.delta(item.id, dir));
+    return this.myVote(item.id) === dir ? Math.max(count, 1) : count;
   }
 
   protected onSearch(event: Event): void {

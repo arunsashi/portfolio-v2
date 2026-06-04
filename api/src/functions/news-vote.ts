@@ -62,14 +62,43 @@ export async function newsVote(
   } catch (err: unknown) {
     const code = (err as { code?: number }).code;
     if (code === 404) {
-      // Item not in the archive (pre-archive legacy) — accept silently.
-      return json(200, { ok: true, counted: false });
+      // No archive doc yet (item only exists inside the 'latest' report —
+      // e.g. before the first refresh run after the archive feature shipped).
+      // Materialize the doc from the latest report so the vote is never lost.
+      const created = await materializeFromLatest(container, parsed.itemId, deltas);
+      return json(200, { ok: true, counted: created });
     }
     ctx.error('news vote failed', err);
     return json(500, { error: 'Could not record the vote.' });
   }
 
   return json(200, { ok: true, counted: true });
+}
+
+/** Create the archive doc for an item that so far only exists in 'latest'. */
+async function materializeFromLatest(
+  container: ReturnType<ReturnType<typeof getDatabase>['container']>,
+  itemId: string,
+  deltas: { up: number; down: number },
+): Promise<boolean> {
+  try {
+    const { resource } = await container
+      .item('latest', 'latest')
+      .read<{ generatedAt?: string; items?: { id?: string }[] }>();
+    const item = resource?.items?.find((i) => String(i.id) === itemId);
+    if (!item) return false; // unknown id — reject quietly (abuse surface)
+
+    await container.items.upsert({
+      ...item,
+      docType: 'item',
+      reportDate: resource?.generatedAt ?? new Date().toISOString().slice(0, 10),
+      votesUp: Math.max(0, deltas.up),
+      votesDown: Math.max(0, deltas.down),
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function validate(body: Partial<VoteRequest> | null): VoteRequest | null {
