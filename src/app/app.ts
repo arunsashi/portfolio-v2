@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 
 import { PageLoaderComponent } from '@shared/ui/page-loader.component';
 import { FeatureFlagService } from '@core/feature-flags/feature-flag.service';
+import { AnalyticsService } from '@core/analytics/analytics.service';
 
 /**
  * App shell for the Figma design ("Desktop - 1"): the page has no top nav —
@@ -23,4 +24,9 @@ import { FeatureFlagService } from '@core/feature-flags/feature-flag.service';
 export class App {
   // Touch the flag service at startup so Statsig initializes once, early.
   private readonly flags = inject(FeatureFlagService);
+
+  constructor() {
+    // Enable autocapture + log the visit (referral source) once at startup.
+    inject(AnalyticsService).init();
+  }
 }

@@ -9,6 +9,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 import { DataService } from '@core/data/data.service';
+import { AnalyticsService } from '@core/analytics/analytics.service';
 import type { ContactRequest } from '@core/models';
 import { environment } from '../../../environments/environment';
 
@@ -210,6 +211,7 @@ function turnstileApi(): TurnstileApi | undefined {
 })
 export class HireMeModalComponent {
   private readonly data = inject(DataService);
+  private readonly analytics = inject(AnalyticsService);
 
   protected readonly isOpen = signal(false);
   protected readonly sent = signal(false);
@@ -235,6 +237,7 @@ export class HireMeModalComponent {
   }
 
   protected open(): void {
+    this.analytics.hireMeClick();
     this.lastFocused = document.activeElement as HTMLElement | null;
     this.sent.set(false);
     this.errorMsg.set(null);
@@ -363,6 +366,7 @@ export class HireMeModalComponent {
 
     try {
       await firstValueFrom(this.data.submitContact(payload));
+      this.analytics.hireMeSubmit();
       this.sent.set(true);
       form.reset();
       this.fileCount.set(0);

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 import { DataService } from '@core/data/data.service';
+import { AnalyticsService } from '@core/analytics/analytics.service';
 import { AccentPipe } from '@shared/ui/accent.pipe';
 import { RevealDirective } from '@shared/ui/reveal.directive';
 
@@ -34,6 +35,7 @@ import { RevealDirective } from '@shared/ui/reveal.directive';
                 rel="noopener noreferrer"
                 class="hover-lift flex flex-col items-center gap-3 rounded-2xl border-4 border-line px-4 py-8 font-bold uppercase tracking-tight text-ink shadow-[5px_5px_0_0_#1a1a1a]"
                 [style.background]="s.accent | accent"
+                (click)="analytics.linklyClick(s.label, s.url)"
               >
                 <i class="text-3xl text-ink {{ iconClass(s.icon) }}" aria-hidden="true"></i>
                 <span>{{ s.label }}</span>
@@ -47,6 +49,7 @@ import { RevealDirective } from '@shared/ui/reveal.directive';
 })
 export class LinklyComponent {
   private readonly data = inject(DataService);
+  protected readonly analytics = inject(AnalyticsService);
   protected readonly profile = toSignal(this.data.getProfile());
 
   /** Map a link's icon key to a Font Awesome class. */
