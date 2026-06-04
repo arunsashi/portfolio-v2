@@ -1,0 +1,95 @@
+import { inject, Injectable } from '@angular/core';
+import { environment } from '@env';
+import { StatsigService } from '@statsig/angular-bindings';
+import { runStatsigAutoCapture } from '@statsig/web-analytics';
+
+/**
+ * Site analytics, powered by Statsig.
+ *
+ * `init()` turns on autocapture (page views, session duration / time-on-page,
+ * clicks, web vitals) and logs a visit event tagged with the referral source.
+ * Custom events cover the specific funnels: section views, Hire-Me click and
+ * submit, and Linkly button clicks.
+ *
+ * All methods are no-ops when Statsig isn't configured (no key) or blocked, so
+ * the site never depends on analytics being available.
+ */
+@Injectable({ providedIn: 'root' })
+export class AnalyticsService {
+  private readonly statsig = environment.statsigClientKey
+    ? inject(StatsigService, { optional: true })
+    : null;
+
+  private started = false;
+  private readonly seenSections = new Set<string>();
+
+  init(): void {
+    if (!this.statsig || this.started) return;
+    this.started = true;
+
+    try {
+      runStatsigAutoCapture(this.statsig.getClient());
+    } catch {
+      /* best-effort */
+    }
+
+    const referrer = typeof document !== 'undefined' ? document.referrer : '';
+    this.log('site_visit', undefined, {
+      referrer: referrer || '(direct)',
+      source: this.classifyReferrer(referrer),
+    });
+  }
+
+  /** First time a section scrolls into view (once per session). */
+  sectionView(section: string): void {
+    if (!section || this.seenSections.has(section)) return;
+    this.seenSections.add(section);
+    this.log('section_view', section);
+  }
+
+  hireMeClick(source = 'modal'): void {
+    this.log('hire_me_click', source);
+  }
+
+  hireMeSubmit(): void {
+    this.log('hire_me_submit');
+  }
+
+  linklyClick(label: string, url: string): void {
+    this.log('linkly_click', label, { url });
+  }
+
+  /** The initial-load error page was shown (API outage as seen by a visitor). */
+  errorPageView(): void {
+    this.log('error_page_view', undefined, {
+      path: globalThis.location.pathname,
+    });
+  }
+
+  private classifyReferrer(ref: string): string {
+    if (!ref) return 'Direct';
+    let host = '';
+    try {
+      host = new URL(ref).hostname.replace(/^www\./, '');
+    } catch {
+      return 'Direct';
+    }
+    const self = globalThis.location.hostname;
+    if (self && host.endsWith(self)) return 'Internal';
+    if (host.includes('linkedin')) return 'LinkedIn';
+    if (host.includes('instagram')) return 'Instagram';
+    if (host.includes('github')) return 'GitHub';
+    if (host.includes('t.co') || host.includes('twitter') || host.includes('x.com')) return 'X/Twitter';
+    if (host.includes('google')) return 'Google';
+    return host || 'Direct';
+  }
+
+  private log(name: string, value?: string, metadata?: Record<string, string>): void {
+    if (!this.statsig) return;
+    try {
+      this.statsig.logEvent(name, value, metadata);
+    } catch {
+      /* best-effort */
+    }
+  }
+}

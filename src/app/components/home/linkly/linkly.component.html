@@ -1,0 +1,30 @@
+@let p = profile();
+<section id="links" class="container-page py-10" aria-labelledby="linkly-heading">
+  <h2 id="linkly-heading" class="mb-7 inline-block rotate-1">
+    <span
+      class="inline-block border-4 border-line bg-ink px-5 py-2.5 text-2xl font-black uppercase tracking-tight text-white shadow-hard-pink-lg sm:text-3xl"
+    >
+      Linkly
+    </span>
+  </h2>
+  @if (p) {
+    <ul class="grid grid-cols-2 gap-5 sm:grid-cols-4">
+      @for (s of p.socials; track s.url; let i = $index) {
+        <li appReveal="scale" [revealDelay]="(i % 4) + 1">
+          <a
+            [href]="s.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover-lift flex flex-col items-center gap-3 rounded-2xl border-4 border-line px-4 py-8 font-bold uppercase tracking-tight text-ink shadow-hard-md"
+            [style.background]="s.accent | accent"
+            (click)="analytics.linklyClick(s.label, s.url)"
+          >
+            <i class="text-3xl text-ink {{ iconClass(s.icon) }}" aria-hidden="true"></i>
+            <span>{{ s.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</section>
+  

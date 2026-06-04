@@ -1,6 +1,7 @@
 // Global stylesheet — Tailwind v4 entry + design tokens.
 // Tailwind must be loaded first (PostCSS plugin: @tailwindcss/postcss).
 @use "tailwindcss";
+@use "styles/functions" as *;
 
 /*
  * DESIGN TOKENS — single source of truth, extracted from the Figma design
@@ -43,15 +44,23 @@
   --color-accent-light-blue: #DBEAFE;
   --color-accent-neon-green: #7BF1A8;
   --color-accent-deep-magenta: #E60076;
+  --color-accent-hotpink: #ff90e8; /* shadow accent (was only in _tokens.scss) */
 
   /* Typography — Inter for body, Space Mono for code/labels (matches Make). */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Space Mono", ui-monospace, monospace;
 
-  /* Hard offset shadows (neo-brutalist) */
+  /* Hard offset shadows (neo-brutalist) — use shadow-hard* utilities, never
+     arbitrary shadow-[...] values. */
+  --shadow-hard-sm: 2px 2px 0 0 #000000;
   --shadow-hard: 4px 4px 0 0 #000000;
+  --shadow-hard-md: 5px 5px 0 0 #1a1a1a;
   --shadow-hard-lg: 6px 6px 0 0 #000000;
   --shadow-hard-xl: 8px 8px 0 0 #000000;
+  --shadow-hard-white: 2px 2px 0 0 #ffffff;
+  --shadow-hard-pink: 3px 3px 0 0 var(--color-accent-hotpink);
+  --shadow-hard-pink-lg: 5px 5px 0 0 var(--color-accent-hotpink);
+  --shadow-hard-under: 0 8px 0 0 #1a1a1a;
 
   /* Layout */
   --container-max: 1141px;
@@ -69,8 +78,8 @@ body {
   margin: 0;
   // Cream canvas with the neo-brutalist radial dot grid (from the Make design).
   background-color: var(--color-canvas);
-  background-image: radial-gradient(var(--color-dot) 2px, transparent 2px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(var(--color-dot) rem(2), transparent rem(2));
+  background-size: rem(24) rem(24);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -92,8 +101,8 @@ body {
 
 // Visible focus for keyboard users — never remove outlines (a11y).
 :focus-visible {
-  outline: 3px solid var(--color-brand);
-  outline-offset: 2px;
+  outline: rem(3) solid var(--color-brand);
+  outline-offset: rem(2);
 }
 
 // Skip link: hidden until focused.
@@ -105,7 +114,7 @@ body {
   padding: 0.6rem 0.9rem;
   background: var(--color-brand);
   color: var(--color-brand-ink);
-  border: 2px solid var(--color-line);
+  border: rem(2) solid var(--color-line);
   border-radius: 0.375rem;
   font-weight: 700;
   transition: top 0.15s ease;
@@ -135,7 +144,7 @@ body {
 // Ambient: subtle bounce for emojis/icons.
 @keyframes bounce-subtle {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(rem(-8)); }
 }
 .animate-bounce-subtle { animation: bounce-subtle 2s ease-in-out infinite; }
 
@@ -148,15 +157,15 @@ body {
 
 // Entrance keyframes (driven by the reveal directive adding .is-visible).
 @keyframes fade-in-up {
-  0% { opacity: 0; transform: translateY(30px); }
+  0% { opacity: 0; transform: translateY(rem(30)); }
   100% { opacity: 1; transform: translateY(0); }
 }
 @keyframes slide-in-left {
-  0% { opacity: 0; transform: translateX(-50px); }
+  0% { opacity: 0; transform: translateX(rem(-50)); }
   100% { opacity: 1; transform: translateX(0); }
 }
 @keyframes slide-in-right {
-  0% { opacity: 0; transform: translateX(50px); }
+  0% { opacity: 0; transform: translateX(rem(50)); }
   100% { opacity: 1; transform: translateX(0); }
 }
 @keyframes scale-in {
@@ -202,12 +211,12 @@ body {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .hover-lift:hover {
-  transform: translate(2px, 2px);
-  box-shadow: 4px 4px 0 0 var(--color-line);
+  transform: translate(rem(2), rem(2));
+  box-shadow: rem(4) rem(4) 0 0 var(--color-line);
 }
 .hover-lift:active {
-  transform: translate(4px, 4px);
-  box-shadow: 2px 2px 0 0 var(--color-line);
+  transform: translate(rem(4), rem(4));
+  box-shadow: rem(2) rem(2) 0 0 var(--color-line);
 }
 
 // Gate all non-essential motion (a11y, WCAG 2.x AA).

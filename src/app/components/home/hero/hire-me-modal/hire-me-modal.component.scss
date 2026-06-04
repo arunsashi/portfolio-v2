@@ -1,0 +1,22 @@
+@use 'functions' as *;
+
+dialog.hire-me-dialog {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  background: transparent;
+  overflow: hidden;
+}
+
+dialog.hire-me-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(rem(14));
+  -webkit-backdrop-filter: blur(rem(14));
+}
+    

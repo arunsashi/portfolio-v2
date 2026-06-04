@@ -1,0 +1,30 @@
+@if (failed()) {
+  <div class="pl__card pl__card--error" role="alert">
+    <span class="pl__sticker" aria-hidden="true">Oops!</span>
+    <span class="pl__crash" aria-hidden="true">
+      <i class="fa-solid fa-rocket pl__rocket"></i>
+      <i class="fa-solid fa-burst pl__burst"></i>
+    </span>
+    <h1 class="pl__title">Houston, we have a problem.</h1>
+    <p class="pl__body">
+      My data API appears to be taking an unscheduled nap. It's not you —
+      it's my cloud. Give it a minute, then try again.
+    </p>
+    <button type="button" class="pl__retry" (click)="retry()">
+      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Try again
+    </button>
+    <p class="pl__small">
+      Still broken? The hamsters have been notified.
+      <i class="fa-solid fa-paw" aria-hidden="true"></i>
+    </p>
+  </div>
+} @else {
+  <div class="pl__card" role="status" aria-live="polite">
+    <div class="pl__dots" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+    <p class="pl__text">Loading</p>
+    <span class="pl__sr">Loading content, please wait.</span>
+  </div>
+}
+  

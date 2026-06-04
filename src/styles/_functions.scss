@@ -1,0 +1,11 @@
+// SCSS functions — load anywhere with:  @use 'functions' as *;
+// (src/styles is on stylePreprocessorOptions.includePaths)
+@use 'sass:math';
+
+/// Convert px to rem (1rem = 16px). Accepts unitless or px values.
+///   font-size: rem(24);     // 1.5rem
+///   border-width: rem(4px); // 0.25rem
+@function rem($px) {
+  $value: if(math.is-unitless($px), $px, math.div($px, 1px));
+  @return math.div($value, 16) * 1rem;
+}

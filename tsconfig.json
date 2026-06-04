@@ -15,9 +15,10 @@
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
-      "@core/*": ["src/app/core/*"],
-      "@shared/*": ["src/app/shared/*"],
-      "@features/*": ["src/app/features/*"]
+      "@core/*": ["src/app/*"],
+      "@shared/*": ["src/app/components/shared/*"],
+      "@features/*": ["src/app/components/*"],
+      "@env": ["src/environments/environment"]
     }
   },
   "angularCompilerOptions": {

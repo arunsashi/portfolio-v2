@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-
-import { PageLoaderComponent } from '@shared/ui/page-loader.component';
-import { FeatureFlagService } from '@core/feature-flags/feature-flag.service';
-import { AnalyticsService } from '@core/analytics/analytics.service';
+import { AnalyticsService } from '@core/services/analytics.service';
+import { FeatureFlagService } from '@core/services/feature-flag.service';
+import { PageLoaderComponent } from '@shared/page-loader/page-loader.component';
 
 /**
  * App shell for the Figma design ("Desktop - 1"): the page has no top nav —
@@ -13,13 +12,7 @@ import { AnalyticsService } from '@core/analytics/analytics.service';
   selector: 'app-root',
   imports: [RouterOutlet, PageLoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <app-page-loader />
-    <a class="skip-link" href="#main">Skip to content</a>
-    <main id="main" tabindex="-1">
-      <router-outlet />
-    </main>
-  `,
+  templateUrl: './app.html',
 })
 export class App {
   // Touch the flag service at startup so Statsig initializes once, early.

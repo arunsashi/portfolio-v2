@@ -1,0 +1,24 @@
+// Reusable SCSS mixins — load anywhere with:  @use 'mixins' as *;
+// (src/styles is on stylePreprocessorOptions.includePaths)
+@use 'functions' as *;
+
+/// Neo-brutalist hard border + offset shadow (the signature card style).
+///   @include brutal-card;            // 4px border, 8px shadow
+///   @include brutal-card(2, 4);      // thinner variant
+@mixin brutal-card($border: 4, $shadow: 8, $color: var(--color-ink, #1a1a1a)) {
+  border: rem($border) solid $color;
+  box-shadow: rem($shadow) rem($shadow) 0 0 $color;
+}
+
+/// Visually-hidden (screen-reader-only) content.
+@mixin sr-only {
+  position: absolute;
+  width: rem(1);
+  height: rem(1);
+  padding: 0;
+  margin: rem(-1);
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,12 @@
+<app-hero />
+<app-ticker />
+<app-linkly />
+<app-skills />
+<app-blog />
+<app-experience />
+<app-projects />
+@if (!flags.isEnabled(gates.SHOW_TESTIMONIALS)) {
+  <app-testimonials />
+}
+<app-footer />
+  

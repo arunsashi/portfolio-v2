@@ -1,12 +1,12 @@
-import {ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection,} from '@angular/core';
-import {provideRouter, withComponentInputBinding, withInMemoryScrolling} from '@angular/router';
 import {provideHttpClient, withFetch, withInterceptors} from '@angular/common/http';
+import {type ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection,} from '@angular/core';
+import {provideRouter, withComponentInputBinding, withInMemoryScrolling} from '@angular/router';
+import {API_DATA_SOURCE, DATA_SOURCE, PLACEHOLDER_DATA_SOURCE} from '@core/config/data-source.config';
+import {provideStatsig} from '@core/config/statsig.providers';
+import {loadingInterceptor} from '@core/interceptors/loading.interceptor';
+import {environment} from '@env';
 
 import {routes} from './app.routes';
-import {API_DATA_SOURCE, DATA_SOURCE, PLACEHOLDER_DATA_SOURCE} from '@core/data/data-source.config';
-import {loadingInterceptor} from '@core/loading/loading.interceptor';
-import {provideStatsig} from '@core/feature-flags/statsig.providers';
-import {environment} from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [

@@ -40,6 +40,10 @@ Key constraints (see `AGENTS.md` for the full set of guardrails):
 - **Cosmos containers:** `profile`, `skills`, `projects` (professional + learning distinguished by `type`), `experience`, optional `companies`. `company`/`details` are denormalized into project docs. Editing is manual via the Cosmos Data Explorer.
 - The API returns clean DTOs (Cosmos system fields `_rid/_self/_etag/_ts` stripped) and sets sensible `Cache-Control` headers.
 
+### Coding conventions
+
+Templates and styles are always separate files (`.html` / `.scss`, never inline). Tailwind-first: repeated patterns get named utilities in the `@theme` block of `styles.scss` (e.g. `shadow-hard*`) instead of arbitrary `[...]` values. Custom SCSS uses `@use` partials from `src/styles/` (on `includePaths`, so `@use 'functions' as *;` works anywhere) and never raw px — use `rem($px)` (1rem = 16px). Path aliases: `@core/*` → `app/*`, `@features/*` → `app/components/*`, `@shared/*` → `app/components/shared/*`, `@env` → environment.
+
 ### Tech stack
 
 - **Front end:** Angular 21 (standalone components, Signals, zoneless, `OnPush`, new control flow, lazy routes, `@defer`), Tailwind v4 via PostCSS.
@@ -62,10 +66,18 @@ Rooted at `/api`, all anonymous:
 ```
 .
 ├── src/                      Angular app
-│   └── app/
-│       ├── core/             models, data access, feature-flags
-│       ├── features/         home, about, skills, projects, experience, blog, contact, …
-│       └── shared/           ui + layout
+│   ├── app/
+│   │   ├── services/         data, loading, feature-flag, analytics
+│   │   ├── interceptors/     HTTP interceptors
+│   │   ├── config/           data-source + Statsig config
+│   │   ├── const/            feature gates, storage keys
+│   │   ├── entities/         models + enums
+│   │   ├── pipes/  directives/
+│   │   └── components/       layered: sub-components nest in their parent's folder
+│   │       ├── shared/       page-loader, section-heading, …
+│   │       ├── home/         hero (hire-me-modal inside), ticker, linkly, skills, …
+│   │       └── project-detail/
+│   └── styles/               _tokens, _functions (rem()), _mixins (SCSS @use)
 ├── api/                      Azure Functions API
 │   └── src/
 │       ├── cosmos.ts         singleton CosmosClient (keyless) + DTO cleaning

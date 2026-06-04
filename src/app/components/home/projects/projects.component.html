@@ -1,0 +1,55 @@
+<section id="work" class="container-page py-12" aria-labelledby="work-heading">
+  <app-section-heading title="Side Quests" headingId="work-heading" bg="purple" />
+  <ul class="grid gap-8 md:grid-cols-2">
+    @for (project of projects(); track project.id; let i = $index) {
+      <li
+        appReveal="scale"
+        [revealDelay]="(i % 4) + 1"
+        class="hover-lift flex h-full flex-col rounded-2xl border-4 border-line p-6 shadow-hard-lg"
+        style="background: color-mix(in srgb, var(--color-accent-purple) 45%, white)"
+      >
+        <div class="mb-4 flex items-start justify-between gap-2">
+          <h3 class="text-2xl font-black leading-tight text-ink">{{ project.name }}</h3>
+          @if (project.inDevelopment) {
+            <span
+              class="rotate-3 border-2 border-line bg-accent-yellow px-3 py-1 text-xs font-black uppercase text-ink shadow-hard-sm"
+            >
+              In Dev
+            </span>
+          } @else if (project.completed) {
+            <span
+              class="rotate-3 border-2 border-line bg-accent-teal px-3 py-1 text-xs font-black uppercase text-ink shadow-hard-sm"
+            >
+              Shipped
+            </span>
+          }
+        </div>
+
+        @if (project.description) {
+          <p class="mb-6 flex-1 text-lg font-bold text-ink/80">{{ project.description }}</p>
+        }
+
+        @if (project.tech?.length) {
+          <div class="mt-auto flex flex-wrap gap-2 border-t-4 border-line pt-4">
+            @for (t of project.tech; track t) {
+              <span class="border-2 border-line bg-surface px-2 py-1 text-xs font-black text-ink shadow-hard-sm">
+                {{ t }}
+              </span>
+            }
+          </div>
+        }
+
+        @if (project.url) {
+          <a
+            [href]="project.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover-lift mt-6 flex items-center justify-center gap-2 border-2 border-line bg-accent-blue px-4 py-3 font-black uppercase text-ink shadow-hard"
+            >Explore <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i
+          ></a>
+        }
+      </li>
+    }
+  </ul>
+</section>
+  

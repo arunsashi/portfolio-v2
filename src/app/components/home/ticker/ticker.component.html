@@ -1,0 +1,19 @@
+<div
+  class="relative left-1/2 my-4 w-screen -translate-x-1/2 rotate-1 overflow-hidden border-y-4 border-line bg-accent-yellow py-5 shadow-hard-under"
+  role="group"
+  aria-label="Current interests"
+>
+  <div class="flex w-max animate-marquee">
+    @for (loop of [0, 1]; track loop) {
+      <ul class="flex shrink-0 items-center" [attr.aria-hidden]="loop === 1 ? 'true' : null">
+        @for (item of items(); track $index) {
+          <li class="flex items-center whitespace-nowrap px-8 text-xl font-black uppercase tracking-wide text-ink">
+            <i class="fa-solid fa-star mr-3 text-brand" aria-hidden="true"></i>{{ item }}
+            <span class="ml-8 text-2xl text-ink/20" aria-hidden="true">•</span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>
+  

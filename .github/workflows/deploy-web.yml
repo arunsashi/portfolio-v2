@@ -54,6 +54,10 @@ jobs:
 
       - run: npm ci
 
+      # Lint gate — strict ESLint (types, imports, a11y templates) must pass
+      # before anything is versioned or deployed.
+      - run: npm run lint
+
       # UI version bump from the triggering commit message:
       #   major:/overhaul: (or BREAKING CHANGE) -> major   (Angular upgrade / overhaul)
       #   feat:                                  -> minor   (feature)
