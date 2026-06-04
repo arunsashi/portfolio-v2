@@ -25,12 +25,27 @@ export class LoadingService {
   private settled = false;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Max time the loader may stay up. After this: if nothing succeeded yet,
-   *  show the error page; if some data already landed, just reveal the page. */
-  private static readonly MAX_LOADER_MS = 3_000;
+  /** Target time to reveal the page. At this point: data arrived -> reveal;
+   *  requests still in flight (e.g. Function App cold start) -> keep waiting;
+   *  everything settled with zero successes -> error page. */
+  private static readonly SOFT_DEADLINE_MS = 3_000;
+
+  /** Absolute ceiling — if nothing has succeeded by now (hung requests,
+   *  total outage), give up and show the error page. */
+  private static readonly HARD_DEADLINE_MS = 15_000;
 
   constructor() {
-    setTimeout(() => { this.finish(); }, LoadingService.MAX_LOADER_MS);
+    setTimeout(() => { this.onSoftDeadline(); }, LoadingService.SOFT_DEADLINE_MS);
+    setTimeout(() => { this.finish(); }, LoadingService.HARD_DEADLINE_MS);
+  }
+
+  private onSoftDeadline(): void {
+    if (this.settled) return;
+    const succeeded = this.completed - this.failures;
+    // Keep the loader up only for the genuinely-still-loading case: requests
+    // pending and nothing usable yet. Everything else resolves now.
+    if (succeeded === 0 && this.pending > 0) return;
+    this.finish();
   }
 
   start(): void {
