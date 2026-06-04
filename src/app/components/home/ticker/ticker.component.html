@@ -3,15 +3,17 @@
   role="group"
   aria-label="What I'm reading — auto-scrolling latest news; drag or scroll to browse, click any item to read more"
 >
-  <!-- pinned label: stays put while the stories scroll past behind it -->
+  <!-- pinned label: a full-width strip above the row on mobile (overlaying
+       would swallow the narrow ticker); a side sticker the stories scroll
+       past from sm up -->
   <span
-    class="absolute inset-y-0 left-0 z-10 flex items-center gap-2 border-r-4 border-line bg-accent-pink px-4 font-mono text-xs font-bold uppercase tracking-wide text-ink"
+    class="z-10 flex items-center gap-2 border-b-4 border-line bg-accent-pink px-4 py-2 font-mono text-xs font-bold uppercase tracking-wide text-ink sm:absolute sm:inset-y-0 sm:left-0 sm:border-b-0 sm:border-r-4 sm:py-0"
   >
     <span class="relative flex h-2.5 w-2.5" aria-hidden="true">
       <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-neon-green opacity-75 motion-reduce:animate-none"></span>
       <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent-neon-green"></span>
     </span>
-    <span>What I'm reading<span class="hidden sm:inline"> &middot; updated daily</span></span>
+    <span>What I'm reading &middot; updated daily</span>
   </span>
 
   <div
