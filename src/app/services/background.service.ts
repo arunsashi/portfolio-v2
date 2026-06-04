@@ -54,7 +54,7 @@ export class BackgroundService {
     // repeats with the tile and reads as an ordered blank band.
     const occupants: GlyphDef[] = [
       ...GLYPHS,
-      GLYPHS[Math.floor(rand() * GLYPHS.length)] ?? (GLYPHS[0] as GlyphDef),
+      GLYPHS[Math.floor(rand() * GLYPHS.length)] ?? (GLYPHS[0]),
     ];
 
     const parts = occupants.map((glyph, i) => {
@@ -89,7 +89,7 @@ export class BackgroundService {
     const parts: string[] = [];
 
     for (let i = 0; i < count; i++) {
-      const glyph = GLYPHS[Math.floor(rand() * GLYPHS.length)] ?? (GLYPHS[0] as GlyphDef);
+      const glyph = GLYPHS[Math.floor(rand() * GLYPHS.length)] ?? (GLYPHS[0]);
       const scale = 1.6 + rand() * 0.9;
       const margin = 24;
       const x = margin + rand() * (size - 2 * margin - glyph.w * scale);
@@ -166,7 +166,7 @@ function shuffle(values: number[], rand: () => number): number[] {
   const out = [...values];
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
-    [out[i], out[j]] = [out[j] as number, out[i] as number];
+    [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
 }
