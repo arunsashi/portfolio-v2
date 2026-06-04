@@ -129,19 +129,6 @@ body {
    directive; ambient motion is gated behind prefers-reduced-motion below.
    ========================================================================== */
 
-// Marquee for the interests ticker (pauses on hover).
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.animate-marquee {
-  animation: marquee 30s linear infinite;
-}
-.animate-marquee:hover,
-.animate-marquee:focus-within {
-  animation-play-state: paused;
-}
-
 // Ambient: subtle bounce for emojis/icons.
 @keyframes bounce-subtle {
   0%, 100% { transform: translateY(0); }
@@ -223,7 +210,6 @@ body {
 // Gate all non-essential motion (a11y, WCAG 2.x AA).
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .animate-marquee,
   .animate-bounce-subtle,
   .animate-wiggle {
     animation: none;

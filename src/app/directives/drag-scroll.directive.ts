@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject, Renderer2 } from '@angular/core';
+import { Directive, ElementRef, inject, type OnDestroy, Renderer2 } from '@angular/core';
 
 /**
  * Click-and-drag horizontal scrolling for a scroll container (the Make design's
@@ -18,9 +18,26 @@ import { Directive, ElementRef, inject, Renderer2 } from '@angular/core';
     '[style.touch-action]': '"pan-x"',
   },
 })
-export class DragScrollDirective {
+export class DragScrollDirective implements OnDestroy {
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly renderer = inject(Renderer2);
+
+  // Capture-phase guard: a click released at the end of a drag must not
+  // activate the link/button under the pointer.
+  private readonly suppressClick = (e: MouseEvent): void => {
+    if (!this.moved) return;
+    e.preventDefault();
+    e.stopPropagation();
+    this.moved = false;
+  };
+
+  constructor() {
+    this.el.nativeElement.addEventListener('click', this.suppressClick, { capture: true });
+  }
+
+  ngOnDestroy(): void {
+    this.el.nativeElement.removeEventListener('click', this.suppressClick, { capture: true });
+  }
 
   private dragging = false;
   private moved = false;

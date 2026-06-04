@@ -59,21 +59,29 @@ export class NewsComponent implements OnDestroy {
   protected readonly searchQuery = signal('');
   protected readonly archiveLoading = signal(false);
   private readonly archiveItems = signal<NewsItem[]>([]);
-  private archiveLoaded = false;
+  private readonly archiveLoaded = signal(false);
 
   protected readonly allItems = computed(() => this.report()?.items ?? []);
 
   /** Ids currently shown on the Latest view. */
   private readonly latestIds = computed(() => new Set(this.allItems().map((i) => i.id)));
 
-  /** Items backing the current view. The archive STORES everything, but the
-   *  archive VIEW shows only items older than the current briefing — anything
-   *  still on Latest is filtered out so the two views never repeat. */
-  private readonly baseItems = computed<NewsItem[]>(() => {
-    if (!this.showArchive()) return this.allItems();
+  /** Archived items older than the current briefing — anything still on
+   *  Latest is filtered out so the two views never repeat. */
+  private readonly olderArchiveItems = computed<NewsItem[]>(() => {
     const current = this.latestIds();
     return this.archiveItems().filter((i) => !current.has(i.id));
   });
+
+  /** Count for the Archive chip (null until the archive has been loaded). */
+  protected readonly archiveCount = computed<number | null>(() =>
+    this.archiveLoaded() && !this.archiveLoading() ? this.olderArchiveItems().length : null,
+  );
+
+  /** Items backing the current view. */
+  private readonly baseItems = computed<NewsItem[]>(() =>
+    this.showArchive() ? this.olderArchiveItems() : this.allItems(),
+  );
   protected readonly generatedAt = computed(() => this.report()?.generatedAt ?? null);
 
   protected readonly activeFilter = computed<NewsCategory | 'all'>(() => {
@@ -136,8 +144,8 @@ export class NewsComponent implements OnDestroy {
     }
     this.analytics.archiveOpened();
     this.archiveEnteredAt = Date.now();
-    if (this.archiveLoaded) return;
-    this.archiveLoaded = true;
+    if (this.archiveLoaded()) return;
+    this.archiveLoaded.set(true);
     this.archiveLoading.set(true);
     this.data.getNewsArchive().subscribe((items) => {
       this.archiveItems.set(items);

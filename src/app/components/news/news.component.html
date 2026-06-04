@@ -12,9 +12,11 @@
   <!-- page header -->
   <header class="mt-8 mb-10" appReveal="left">
     <div class="mb-4 flex flex-wrap items-center gap-3">
-      <span class="inline-block -rotate-1 border-4 border-line bg-accent-yellow px-3 py-1 font-mono text-xs font-bold uppercase shadow-hard-sm">
-        Updated Jun 2026
-      </span>
+      @if (generatedAt(); as updated) {
+        <span class="inline-block -rotate-1 border-4 border-line bg-accent-yellow px-3 py-1 font-mono text-xs font-bold uppercase shadow-hard-sm">
+          Updated {{ updated | date: 'MMM d, yyyy' }}
+        </span>
+      }
     </div>
 
     <h1 class="text-5xl font-black uppercase tracking-tighter leading-none sm:text-6xl">
@@ -63,6 +65,9 @@
     >
       <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
       Archive
+      @if (archiveCount() !== null) {
+        <span class="ml-0.5 opacity-60">({{ archiveCount() }})</span>
+      }
     </button>
   </div>
 
@@ -170,7 +175,7 @@
       @if (generatedAt()) {
         {{ generatedAt() | date: 'MMMM d, yyyy' }}
       }
-      &middot; Auto-refresh is on the roadmap.
+      &middot; Refreshed daily at 6:00 UTC.
     </p>
     <p class="mt-2 font-mono text-xs text-muted/60">
       Market information is for informational purposes only and does not constitute financial advice.

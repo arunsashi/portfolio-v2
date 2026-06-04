@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  type AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  type ElementRef,
+  inject,
+  type OnDestroy,
+  viewChild,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { DragScrollDirective } from '@core/directives/drag-scroll.directive';
 import type { NewsCategory, NewsItem } from '@core/entities';
 import { DataService } from '@core/services/data.service';
 
@@ -12,19 +21,112 @@ const CATEGORY_ICONS: Record<NewsCategory, string> = {
   investing: 'fa-solid fa-chart-line',
 };
 
+/** Auto-scroll speed in px/second. */
+const MARQUEE_SPEED = 60;
+
 @Component({
   selector: 'app-ticker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, DragScrollDirective],
   templateUrl: './ticker.component.html',
 })
-export class TickerComponent {
+export class TickerComponent implements AfterViewInit, OnDestroy {
   private readonly data = inject(DataService);
   private readonly report = toSignal(this.data.getNews());
+  private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+
+  private rafId = 0;
+  private paused = false;
+  private dragging = false;
 
   protected readonly items = (): NewsItem[] => this.report()?.items ?? [];
 
   protected iconFor(cat: NewsCategory): string {
     return CATEGORY_ICONS[cat];
+  }
+
+  ngAfterViewInit(): void {
+    const el = this.scroller()?.nativeElement;
+    if (!el || typeof requestAnimationFrame === 'undefined') return;
+
+    const reducedMotion =
+      typeof matchMedia !== 'undefined' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Track the marquee position as a float: browsers round scrollLeft on
+    // read, so sub-pixel per-frame increments (high-refresh displays) would
+    // otherwise round away to zero movement.
+    let pos = -1;
+    let applied = -1;
+    let last = performance.now();
+
+    const tick = (now: number): void => {
+      const dt = Math.min((now - last) / 1000, 0.1); // clamp tab-restore spikes
+      last = now;
+      const half = el.scrollWidth / 2;
+
+      if (half > 0) {
+        // Start in the middle band so there's always room to drag both ways.
+        if (pos < 0) {
+          pos = half;
+          applied = -1;
+        }
+
+        // The user scrolled (drag / wheel / touch momentum) — resync.
+        if (Math.abs(el.scrollLeft - applied) > 1) {
+          pos = el.scrollLeft;
+        }
+
+        if (!this.paused && !this.dragging && !reducedMotion) {
+          pos += MARQUEE_SPEED * dt;
+        }
+
+        // Infinite loop: keep position within [0.5·half, 1.5·half). The two
+        // content copies are identical, so the jump is invisible. Never wrap
+        // mid-drag — the drag anchors to its start position and would fight.
+        if (!this.dragging) {
+          if (pos >= half * 1.5) pos -= half;
+          else if (pos < half * 0.5) pos += half;
+        }
+
+        applied = Math.round(pos);
+        if (Math.round(el.scrollLeft) !== applied) {
+          el.scrollLeft = applied;
+        }
+      }
+
+      this.rafId = requestAnimationFrame(tick);
+    };
+    this.rafId = requestAnimationFrame(tick);
+  }
+
+  ngOnDestroy(): void {
+    cancelAnimationFrame(this.rafId);
+  }
+
+  protected pause(): void {
+    this.paused = true;
+  }
+
+  protected resume(): void {
+    this.paused = false;
+    this.dragging = false;
+  }
+
+  protected dragStart(): void {
+    this.dragging = true;
+  }
+
+  protected dragEnd(): void {
+    this.dragging = false;
+  }
+
+  /** Let a vertical mouse wheel browse the ticker horizontally. */
+  protected onWheel(event: WheelEvent): void {
+    const el = this.scroller()?.nativeElement;
+    if (!el) return;
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    el.scrollLeft += delta;
+    event.preventDefault();
   }
 }
