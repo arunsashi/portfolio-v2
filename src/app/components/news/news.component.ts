@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { DataService } from '@core/services/data.service';
+import { Router, RouterLink } from '@angular/router';
+import { RevealDirective } from '@core/directives/reveal.directive';
 import type { NewsCategory } from '@core/entities';
 import { AccentPipe } from '@core/pipes/accent.pipe';
-import { RevealDirective } from '@core/directives/reveal.directive';
+import { DataService } from '@core/services/data.service';
 
 const VALID_CATEGORIES: string[] = ['ui-ux', 'api', 'ai', 'security', 'investing'];
 
@@ -68,11 +68,11 @@ export class NewsComponent {
   ];
 
   protected categoryIcon(cat: NewsCategory): string {
-    return CATEGORY_ICONS[cat] ?? 'fa-solid fa-star';
+    return CATEGORY_ICONS[cat];
   }
 
   protected setFilter(cat: NewsCategory | 'all'): void {
-    this.router.navigate([], {
+    void this.router.navigate([], {
       queryParams: { cat: cat === 'all' ? null : cat },
       queryParamsHandling: 'merge',
     });

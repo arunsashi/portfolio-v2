@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { DataService } from '@core/services/data.service';
+import { RouterLink } from '@angular/router';
 import type { NewsCategory, NewsItem } from '@core/entities';
+import { DataService } from '@core/services/data.service';
 
 const CATEGORY_ICONS: Record<NewsCategory, string> = {
   'ui-ux': 'fa-solid fa-palette',
@@ -25,6 +25,6 @@ export class TickerComponent {
   protected readonly items = (): NewsItem[] => this.report()?.items ?? [];
 
   protected iconFor(cat: NewsCategory): string {
-    return CATEGORY_ICONS[cat] ?? 'fa-solid fa-star';
+    return CATEGORY_ICONS[cat];
   }
 }

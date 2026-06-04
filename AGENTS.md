@@ -12,6 +12,11 @@ A responsive, accessible personal portfolio for Arun. **Angular (latest stable) 
 - **Secrets stay server-side.** Cosmos connection string and Medium/dev.to usernames live in SWA Application Settings — never in client code, never committed. The Statsig **client** key is the only key allowed in the front end.
 - Keep front end (`/`) and API (`/api`) in **one repo**; deploy via the SWA GitHub Actions workflow.
 
+## Linting — mandatory for every code change
+- Strict ESLint flat config lives at `eslint.config.js` (typescript-eslint **strict-type-checked** + stylistic, Angular TS + template + **accessibility** rules, `simple-import-sort`, `unused-imports`). The `deploy-web` CI fails on any lint error.
+- **Write code that conforms from the start:** no `any`, explicit return types, inline `import type` for types, sorted imports, no unused vars/imports, no empty functions, no dead code (`no-unnecessary-condition` flags fallbacks the types make impossible), `void` fire-and-forget promises, focusable interactive elements in templates.
+- **After ANY code change, run `npm run lint` (auto-fixables: `npm run lint:fix`) and fix every error before committing.** If the agent's environment can't execute eslint (e.g. sandboxed registry), say so explicitly and have Arun run it locally — never assume it passes.
+
 ## Tech & coding conventions
 - Angular: **standalone components, Signals, zoneless, `OnPush`, new control flow** (`@if`/`@for`/`@switch`), lazy routes, `@defer` for heavy/below-the-fold sections. Strong TypeScript interfaces for all data.
 - Tailwind v4 via `ng add tailwindcss`; **use design tokens from Figma** mapped into the Tailwind `@theme` — avoid hardcoded colors/spacing.
