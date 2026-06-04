@@ -1,10 +1,11 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, type OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { RevealDirective } from '@core/directives/reveal.directive';
 import type { NewsCategory, NewsItem } from '@core/entities';
 import { AccentPipe } from '@core/pipes/accent.pipe';
+import { AnalyticsService } from '@core/services/analytics.service';
 import { DataService } from '@core/services/data.service';
 
 const VALID_CATEGORIES: string[] = ['ui-ux', 'api', 'ai', 'security', 'investing'];
@@ -24,11 +25,31 @@ const CATEGORY_ICONS: Record<NewsCategory | 'all', string> = {
   imports: [RouterLink, DatePipe, AccentPipe, RevealDirective],
   templateUrl: './news.component.html',
 })
-export class NewsComponent {
+export class NewsComponent implements OnDestroy {
   readonly cat = input<string>('');
 
   private readonly data = inject(DataService);
   private readonly router = inject(Router);
+  private readonly analytics = inject(AnalyticsService);
+
+  // Dwell-time tracking (flushed on leave / archive close).
+  private readonly pageEnteredAt = Date.now();
+  private archiveEnteredAt: number | null = null;
+
+  constructor() {
+    this.analytics.newsPageView();
+  }
+
+  ngOnDestroy(): void {
+    this.flushArchiveTime();
+    this.analytics.newsPageTime(Math.round((Date.now() - this.pageEnteredAt) / 1000));
+  }
+
+  private flushArchiveTime(): void {
+    if (this.archiveEnteredAt === null) return;
+    this.analytics.archiveTime(Math.round((Date.now() - this.archiveEnteredAt) / 1000));
+    this.archiveEnteredAt = null;
+  }
 
   private readonly report = toSignal(this.data.getNews());
 
@@ -110,8 +131,11 @@ export class NewsComponent {
     this.showArchive.set(archive);
     if (!archive) {
       this.searchQuery.set('');
+      this.flushArchiveTime();
       return;
     }
+    this.analytics.archiveOpened();
+    this.archiveEnteredAt = Date.now();
     if (this.archiveLoaded) return;
     this.archiveLoaded = true;
     this.archiveLoading.set(true);

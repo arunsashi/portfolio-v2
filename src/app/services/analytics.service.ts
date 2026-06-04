@@ -59,6 +59,26 @@ export class AnalyticsService {
     this.log('linkly_click', label, { url });
   }
 
+  /** News page opened (route visit). */
+  newsPageView(): void {
+    this.log('news_page_view');
+  }
+
+  /** Seconds spent on the news page (logged when leaving via in-app nav). */
+  newsPageTime(seconds: number): void {
+    this.log('news_page_time', seconds);
+  }
+
+  /** Archive view opened within the news page. */
+  archiveOpened(): void {
+    this.log('archive_opened');
+  }
+
+  /** Seconds spent in the archive view. */
+  archiveTime(seconds: number): void {
+    this.log('archive_time', seconds);
+  }
+
   /** The initial-load error page was shown (API outage as seen by a visitor). */
   errorPageView(): void {
     this.log('error_page_view', undefined, {
@@ -84,7 +104,7 @@ export class AnalyticsService {
     return host || 'Direct';
   }
 
-  private log(name: string, value?: string, metadata?: Record<string, string>): void {
+  private log(name: string, value?: string | number, metadata?: Record<string, string>): void {
     if (!this.statsig) return;
     try {
       this.statsig.logEvent(name, value, metadata);
