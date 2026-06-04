@@ -5,13 +5,22 @@ dialog.hire-me-dialog {
   inset: 0;
   margin: 0;
   border: 0;
-  padding: 0;
+  padding: 1rem;
   width: 100vw;
   height: 100dvh;
   max-width: none;
   max-height: none;
   background: transparent;
-  overflow: hidden;
+  // Taller-than-viewport content must scroll, never clip.
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+// Flex + margin:auto on the panel: vertically centered when it fits,
+// scrollable from the very top when it doesn't (absolute centering with
+// translate clips both ends on short viewports).
+dialog.hire-me-dialog[open] {
+  display: flex;
 }
 
 dialog.hire-me-dialog::backdrop {

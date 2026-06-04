@@ -163,6 +163,14 @@ export class NewsComponent implements OnDestroy {
   );
   protected readonly generatedAt = computed(() => this.report()?.generatedAt ?? null);
 
+  /** The 6:00 UTC daily refresh expressed in the visitor's local time zone.
+   *  Anchored to today's date so DST shifts are reflected correctly
+   *  (DatePipe formats instants in the browser's zone). */
+  protected readonly refreshLocalTime = ((): Date => {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 6));
+  })();
+
   protected readonly activeFilter = computed<NewsCategory | 'all'>(() => {
     const c = this.cat();
     return VALID_CATEGORIES.includes(c) ? (c as NewsCategory) : 'all';

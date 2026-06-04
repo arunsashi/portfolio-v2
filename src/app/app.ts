@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AnalyticsService } from '@core/services/analytics.service';
+import { BackgroundService } from '@core/services/background.service';
 import { FeatureFlagService } from '@core/services/feature-flag.service';
 import { PageLoaderComponent } from '@shared/page-loader/page-loader.component';
 
@@ -21,5 +22,7 @@ export class App {
   constructor() {
     // Enable autocapture + log the visit (referral source) once at startup.
     inject(AnalyticsService).init();
+    // Per-visitor randomized glyph background (seeded by the visitor id).
+    inject(BackgroundService).init();
   }
 }

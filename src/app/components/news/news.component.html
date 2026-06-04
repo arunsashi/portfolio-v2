@@ -222,7 +222,7 @@
       @if (generatedAt()) {
         {{ generatedAt() | date: 'MMMM d, yyyy' }}
       }
-      &middot; Refreshed daily at 6:00 UTC.
+      &middot; Refreshed daily at {{ refreshLocalTime | date: 'h:mm a' }} your time.
     </p>
     <p class="mt-2 font-mono text-xs text-muted/60">
       Market information is for informational purposes only and does not constitute financial advice.
