@@ -52,13 +52,16 @@
       </button>
     }
 
+    <!-- divider between category filters and the archive toggle -->
+    <span class="w-1 self-stretch bg-line" aria-hidden="true"></span>
+
     <!-- archive toggle: on page load only the latest report is fetched; the
          archive API is called lazily the first time this is switched on -->
     <button
       type="button"
       (click)="setView(showArchive() ? 'latest' : 'archive')"
       [attr.aria-pressed]="showArchive()"
-      class="flex cursor-pointer items-center gap-2 border-4 border-line px-4 py-2 font-mono text-sm font-bold uppercase tracking-wide shadow-hard-sm transition-transform active:translate-y-0.5 sm:ml-auto"
+      class="flex cursor-pointer items-center gap-2 border-4 border-line px-4 py-2 font-mono text-sm font-bold uppercase tracking-wide shadow-hard-sm transition-transform active:translate-y-0.5"
       [class]="showArchive()
         ? 'bg-accent-pink text-ink'
         : 'bg-surface text-ink hover:bg-accent-pink'"
@@ -133,17 +136,59 @@
             </p>
           }
 
-          <!-- source link -->
+          <!-- footer action row: votes left, source right -->
+          @if (flags.isEnabled(gates.NEWS_VOTES) || item.sourceUrl) {
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+          @if (flags.isEnabled(gates.NEWS_VOTES)) {
+            <div
+              class="flex items-center gap-2"
+              role="group"
+              aria-label="Was this story helpful?"
+            >
+              <button
+                type="button"
+                (click)="castVote(item, 'up')"
+                appVoteBurst="up"
+                [attr.aria-pressed]="myVote(item.id) === 'up'"
+                aria-label="Helpful"
+                class="flex cursor-pointer items-center gap-1.5 border-2 border-line px-2.5 py-1 font-mono text-xs font-bold transition-transform active:translate-y-0.5"
+                [class]="myVote(item.id) === 'up'
+                  ? 'bg-accent-neon-green text-ink'
+                  : 'bg-surface text-ink hover:bg-accent-neon-green/40'"
+              >
+                <i class="fa-solid fa-thumbs-up" aria-hidden="true"></i>
+                {{ voteCount(item, 'up') }}
+              </button>
+              <button
+                type="button"
+                (click)="castVote(item, 'down')"
+                appVoteBurst="down"
+                [attr.aria-pressed]="myVote(item.id) === 'down'"
+                aria-label="Not helpful"
+                class="flex cursor-pointer items-center gap-1.5 border-2 border-line px-2.5 py-1 font-mono text-xs font-bold transition-transform active:translate-y-0.5"
+                [class]="myVote(item.id) === 'down'
+                  ? 'bg-accent-pink text-ink'
+                  : 'bg-surface text-ink hover:bg-accent-pink/40'"
+              >
+                <i class="fa-solid fa-thumbs-down" aria-hidden="true"></i>
+                {{ voteCount(item, 'down') }}
+              </button>
+            </div>
+          }
+
           @if (item.sourceUrl) {
             <a
               [href]="item.sourceUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="mt-1 inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase text-brand hover:underline"
+              (click)="onSourceClick(item)"
+              class="ml-auto inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase text-brand hover:underline"
             >
               <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
               {{ item.sourceName ?? 'Read source' }}
             </a>
+          }
+          </div>
           }
         </div>
       </article>

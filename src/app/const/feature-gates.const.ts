@@ -7,6 +7,8 @@ export const FEATURE_GATES = {
   SHOW_TESTIMONIALS: 'show_testimonials',
   /** When ON, the Career Changelog hides client pills and disables expand. */
   ALTERNATIVE_WORK_ARCHIVE: 'alternative_work_archive',
+  /** When ON, thumbs up/down voting appears on news cards. */
+  NEWS_VOTES: 'news_votes',
 } as const;
 
 export type FeatureGate = (typeof FEATURE_GATES)[keyof typeof FEATURE_GATES];

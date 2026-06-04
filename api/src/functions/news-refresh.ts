@@ -127,6 +127,77 @@ const PUBLISH_TOOL: Anthropic.Tool = {
 // Timer trigger — runs daily at 06:00 UTC
 // ---------------------------------------------------------------------------
 
+/**
+ * Aggregate net reader votes (last 30 days) by category and tag into a
+ * soft-steer prompt block. Empty string when there's no meaningful signal.
+ */
+async function buildAudienceSignal(ctx: InvocationContext): Promise<string> {
+  try {
+    const cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const container = getDatabase().container('news');
+    const { resources } = await container.items
+      .query({
+        query:
+          'SELECT c.category, c.tags, c.votesUp, c.votesDown FROM c WHERE c.docType = @type AND c.reportDate >= @cutoff AND (IS_DEFINED(c.votesUp) OR IS_DEFINED(c.votesDown))',
+        parameters: [
+          { name: '@type', value: 'item' },
+          { name: '@cutoff', value: cutoff },
+        ],
+      })
+      .fetchAll();
+
+    if (resources.length === 0) return '';
+
+    const catNet = new Map<string, number>();
+    const tagNet = new Map<string, number>();
+    for (const r of resources as {
+      category?: string;
+      tags?: string[];
+      votesUp?: number;
+      votesDown?: number;
+    }[]) {
+      const net = (r.votesUp ?? 0) - (r.votesDown ?? 0);
+      if (net === 0) continue;
+      if (r.category) catNet.set(r.category, (catNet.get(r.category) ?? 0) + net);
+      for (const tag of r.tags ?? []) tagNet.set(tag, (tagNet.get(tag) ?? 0) + net);
+    }
+
+    // Ignore noise below a net of ±2.
+    const fmt = (m: Map<string, number>, dir: 1 | -1, max: number): string =>
+      [...m.entries()]
+        .filter(([, n]) => dir * n >= 2)
+        .sort((a, b) => dir * (b[1] - a[1]))
+        .slice(0, max)
+        .map(([k, n]) => `${k} (${n > 0 ? '+' : ''}${n})`)
+        .join(', ');
+
+    const lines: string[] = [];
+    const upCats = fmt(catNet, 1, 5);
+    const upTags = fmt(tagNet, 1, 8);
+    const downCats = fmt(catNet, -1, 5);
+    const downTags = fmt(tagNet, -1, 5);
+    if (upCats) lines.push(`Most approved categories: ${upCats}`);
+    if (upTags) lines.push(`Most approved topics: ${upTags}`);
+    if (downCats) lines.push(`Least approved categories: ${downCats}`);
+    if (downTags) lines.push(`Least approved topics: ${downTags}`);
+    if (lines.length === 0) return '';
+
+    ctx.log(`Audience signal: ${lines.join(' | ')}`);
+    return [
+      '',
+      '',
+      '## Audience signal (reader votes, last 30 days)',
+      ...lines,
+      'Guidance: keep the standard report structure and per-category item counts,',
+      'but WITHIN each category prefer stories on approved themes and de-emphasize',
+      'less-approved ones. This is a soft signal — genuine newsworthiness still wins.',
+    ].join('\n');
+  } catch (err) {
+    ctx.warn('Audience signal skipped:', err);
+    return '';
+  }
+}
+
 async function newsRefresh(_timer: Timer, ctx: InvocationContext): Promise<void> {
   const apiKey = process.env['ANTHROPIC_API_KEY'];
   if (!apiKey) {
@@ -138,6 +209,10 @@ async function newsRefresh(_timer: Timer, ctx: InvocationContext): Promise<void>
   ctx.log(`Daily news refresh starting for ${today}…`);
 
   const client = new Anthropic({ apiKey });
+
+  // Soft steer from reader votes — appended to the USER message so the cached
+  // static system prompt is never invalidated.
+  const audienceSignal = await buildAudienceSignal(ctx);
 
   const response = await client.messages.create({
     model: 'claude-opus-4-8',
@@ -157,7 +232,7 @@ async function newsRefresh(_timer: Timer, ctx: InvocationContext): Promise<void>
     messages: [
       {
         role: 'user',
-        content: `Generate today's daily news briefing. Today is ${today}. Draw on the most recent developments you know about, referencing anchor sources where you have specific article knowledge.`,
+        content: `Generate today's daily news briefing. Today is ${today}. Draw on the most recent developments you know about, referencing anchor sources where you have specific article knowledge.${audienceSignal}`,
       },
     ],
   });

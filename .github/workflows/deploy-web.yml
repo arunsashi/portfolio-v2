@@ -8,6 +8,7 @@ name: Deploy web (Static Web App)
 #   AZURE_STATIC_WEB_APPS_API_TOKEN  - SWA deployment token (from infra outputs)
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID  - OIDC login (to tag the SWA)
 #   STATSIG_CLIENT_KEY  - public Statsig client key, injected into the build
+#   TURNSTILE_SITE_KEY  - public Turnstile site key, injected into the build
 # Optional repo variables:
 #   AZURE_STATIC_WEB_APP_NAME  - defaults to swa-arunsudi-prod
 #   AZURE_RESOURCE_GROUP       - defaults to rg-portfolio-prod
@@ -80,13 +81,16 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "UI version is now $v"
 
-      # Inject the public Statsig client key from the secret into the prod
-      # environment file. Empty secret -> placeholder cleared -> flags disabled.
-      - name: Inject Statsig client key
+      # Inject the public client keys from secrets into the prod environment
+      # file. An empty secret clears its placeholder -> that feature disables
+      # itself fail-safe (Statsig flags off / Turnstile widget hidden).
+      - name: Inject client keys
         env:
           STATSIG_CLIENT_KEY: ${{ secrets.STATSIG_CLIENT_KEY }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
         run: |
           sed -i "s|__STATSIG_CLIENT_KEY__|${STATSIG_CLIENT_KEY}|" src/environments/environment.prod.ts
+          sed -i "s|__TURNSTILE_SITE_KEY__|${TURNSTILE_SITE_KEY}|" src/environments/environment.prod.ts
 
       - run: npm run build -- --configuration production
 

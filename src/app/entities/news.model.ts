@@ -15,6 +15,19 @@ export interface NewsItem {
   tags: string[];
   accent: string;
   tickerLabel: string;
+  /** Reader vote counters (live on the archived item doc). */
+  votesUp?: number;
+  votesDown?: number;
+}
+
+export type NewsVoteDirection = 'up' | 'down';
+
+export interface NewsVoteRequest {
+  itemId: string;
+  /** The new vote; null retracts. */
+  vote: NewsVoteDirection | null;
+  /** The visitor's previous vote on this item, if any. */
+  previous: NewsVoteDirection | null;
 }
 
 export interface NewsReport {

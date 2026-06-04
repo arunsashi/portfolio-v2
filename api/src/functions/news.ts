@@ -23,10 +23,39 @@ export async function news(
       return { status: 404, jsonBody: { error: 'No news report found.' } };
     }
 
+    // Vote counters live on the archived item docs (written by /news/vote);
+    // merge them into the report items so the Latest view shows counts.
+    const report = clean(resource) as {
+      items?: { id?: unknown; votesUp?: number; votesDown?: number }[];
+    };
+    if (Array.isArray(report.items) && report.items.length > 0) {
+      const ids = report.items.map((i) => String(i.id));
+      const { resources: counts } = await container.items
+        .query({
+          query:
+            'SELECT c.id, c.votesUp, c.votesDown FROM c WHERE c.docType = @type AND ARRAY_CONTAINS(@ids, c.id)',
+          parameters: [
+            { name: '@type', value: 'item' },
+            { name: '@ids', value: ids },
+          ],
+        })
+        .fetchAll();
+
+      const byId = new Map<string, { votesUp?: number; votesDown?: number }>(
+        counts.map((c: { id: string; votesUp?: number; votesDown?: number }) => [c.id, c]),
+      );
+      for (const item of report.items) {
+        const c = byId.get(String(item.id));
+        if (typeof c?.votesUp === 'number') item.votesUp = c.votesUp;
+        if (typeof c?.votesDown === 'number') item.votesDown = c.votesDown;
+      }
+    }
+
     return {
       status: 200,
-      headers: { 'Cache-Control': 'public, max-age=3600' },
-      jsonBody: clean(resource),
+      // 15 min (was 1h) so vote counts on Latest don't lag too far.
+      headers: { 'Cache-Control': 'public, max-age=900' },
+      jsonBody: report,
     };
   } catch (err: unknown) {
     // CosmosDB throws a 404-coded error when the document doesn't exist yet.

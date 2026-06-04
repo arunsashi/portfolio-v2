@@ -2,11 +2,15 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, type OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { FEATURE_GATES } from '@core/const/feature-gates.const';
 import { RevealDirective } from '@core/directives/reveal.directive';
-import type { NewsCategory, NewsItem } from '@core/entities';
+import { VoteBurstDirective } from '@core/directives/vote-burst.directive';
+import type { NewsCategory, NewsItem, NewsVoteDirection } from '@core/entities';
 import { AccentPipe } from '@core/pipes/accent.pipe';
 import { AnalyticsService } from '@core/services/analytics.service';
 import { DataService } from '@core/services/data.service';
+import { FeatureFlagService } from '@core/services/feature-flag.service';
+import { NewsVoteService } from '@core/services/news-vote.service';
 
 const VALID_CATEGORIES: string[] = ['ui-ux', 'api', 'ai', 'security', 'investing'];
 
@@ -22,7 +26,7 @@ const CATEGORY_ICONS: Record<NewsCategory | 'all', string> = {
 @Component({
   selector: 'app-news',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, DatePipe, AccentPipe, RevealDirective],
+  imports: [RouterLink, DatePipe, AccentPipe, RevealDirective, VoteBurstDirective],
   templateUrl: './news.component.html',
 })
 export class NewsComponent implements OnDestroy {
@@ -31,6 +35,9 @@ export class NewsComponent implements OnDestroy {
   private readonly data = inject(DataService);
   private readonly router = inject(Router);
   private readonly analytics = inject(AnalyticsService);
+  private readonly votesSvc = inject(NewsVoteService);
+  protected readonly flags = inject(FeatureFlagService);
+  protected readonly gates = FEATURE_GATES;
 
   // Dwell-time tracking (flushed on leave / archive close).
   private readonly pageEnteredAt = Date.now();
@@ -151,6 +158,28 @@ export class NewsComponent implements OnDestroy {
       this.archiveItems.set(items);
       this.archiveLoading.set(false);
     });
+  }
+
+  /** Opening the source counts as an implicit thumbs-up (never overrides). */
+  protected onSourceClick(item: NewsItem): void {
+    this.analytics.newsSourceClick(item.id);
+    if (this.flags.isEnabled(this.gates.NEWS_VOTES)) {
+      this.votesSvc.autoUpvote(item.id);
+    }
+  }
+
+  protected castVote(item: NewsItem, dir: NewsVoteDirection): void {
+    this.votesSvc.toggle(item.id, dir);
+  }
+
+  protected myVote(itemId: string): NewsVoteDirection | null {
+    return this.votesSvc.myVote(itemId);
+  }
+
+  /** Server count + this session's optimistic adjustment, floored at 0. */
+  protected voteCount(item: NewsItem, dir: NewsVoteDirection): number {
+    const base = (dir === 'up' ? item.votesUp : item.votesDown) ?? 0;
+    return Math.max(0, base + this.votesSvc.delta(item.id, dir));
   }
 
   protected onSearch(event: Event): void {

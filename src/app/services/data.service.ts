@@ -7,6 +7,7 @@ import type {
   Experience,
   NewsItem,
   NewsReport,
+  NewsVoteRequest,
   Profile,
   Project,
   ProjectType,
@@ -79,6 +80,11 @@ export class DataService {
     return this.http
       .get<NewsItem[]>(this.url('news/archive'))
       .pipe(catchError(() => of<NewsItem[]>([])));
+  }
+
+  /** Record a thumbs up/down on a news item. */
+  voteNews(payload: NewsVoteRequest): Observable<unknown> {
+    return this.http.post(this.url('news/vote'), payload);
   }
 
   /** Submit the contact form (the one write endpoint). */

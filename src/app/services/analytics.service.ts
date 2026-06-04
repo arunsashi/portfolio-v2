@@ -79,6 +79,16 @@ export class AnalyticsService {
     this.log('archive_time', seconds);
   }
 
+  /** A visitor opened a news item's source link. */
+  newsSourceClick(itemId: string): void {
+    this.log('news_source_click', undefined, { itemId });
+  }
+
+  /** A thumbs vote on a news item ('up' | 'down' | 'retract' | 'auto-up'). */
+  newsVote(itemId: string, action: string): void {
+    this.log('news_vote', action, { itemId });
+  }
+
   /** The initial-load error page was shown (API outage as seen by a visitor). */
   errorPageView(): void {
     this.log('error_page_view', undefined, {
