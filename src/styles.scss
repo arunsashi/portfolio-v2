@@ -229,6 +229,68 @@ body {
 }
 
 /*
+ * Deep-link highlight — pulses a card when arriving via a ticker link
+ * (?item=<id>). Reduced motion gets a static ring instead (below).
+ */
+// Doubled class: must outrank [data-reveal].is-visible, whose animation
+// shorthand would otherwise win the cascade and suppress the pulse.
+// opacity:1 keeps the card visible since this replaces the reveal's fill.
+.card-highlight.card-highlight {
+  opacity: 1;
+  animation: card-highlight 1.8s ease-out 1;
+}
+@keyframes card-highlight {
+  0% {
+    box-shadow: rem(4) rem(4) 0 0 var(--color-line);
+    transform: translate(0, 0);
+  }
+  15% {
+    box-shadow:
+      0 0 0 rem(6) var(--color-accent-yellow),
+      rem(9) rem(9) 0 0 var(--color-line);
+    transform: translate(rem(-3), rem(-3));
+  }
+  32% {
+    box-shadow:
+      0 0 0 rem(2) var(--color-accent-yellow),
+      rem(6) rem(6) 0 0 var(--color-line);
+    transform: translate(rem(-1), rem(-1));
+  }
+  48% {
+    box-shadow:
+      0 0 0 rem(6) var(--color-accent-hotpink),
+      rem(9) rem(9) 0 0 var(--color-line);
+    transform: translate(rem(-3), rem(-3));
+  }
+  72% {
+    box-shadow:
+      0 0 0 rem(3) var(--color-accent-yellow),
+      rem(6) rem(6) 0 0 var(--color-line);
+    transform: translate(rem(-1), rem(-1));
+  }
+  100% {
+    box-shadow: rem(4) rem(4) 0 0 var(--color-line);
+    transform: translate(0, 0);
+  }
+}
+
+// Card-scale confetti for the deep-link highlight (spawned imperatively):
+// squares pop off the card's edges and tumble away.
+.card-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.card-spark {
+  position: absolute;
+  width: rem(10);
+  height: rem(10);
+  border: rem(2) solid var(--color-line);
+  background: var(--spark-color, var(--color-accent-yellow));
+  animation: spark-fly 0.8s ease-out both;
+}
+
+/*
  * hover-lift — the signature neo-brutalist interaction: nudge up-left and grow
  * the hard shadow on hover, press down-right on active. Applied to cards,
  * buttons and link tiles.
@@ -252,6 +314,10 @@ body {
   .animate-wiggle,
   .vote-spark,
   .vote-pop {
+    animation: none;
+  }
+  // No pulse under reduced motion — the scroll-to-center is the indicator.
+  .card-highlight.card-highlight {
     animation: none;
   }
   // Reveal elements must still be visible without their entrance animation.

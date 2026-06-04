@@ -100,7 +100,9 @@
     @for (item of filteredItems(); track item.id) {
       <article
         appReveal
-        class="group flex flex-col border-4 border-line bg-surface shadow-hard transition-shadow hover:shadow-hard-lg"
+        [id]="'news-' + item.id"
+        [class.card-highlight]="highlightId() === item.id"
+        class="group relative flex flex-col border-4 border-line bg-surface shadow-hard transition-shadow hover:shadow-hard-lg"
       >
         <!-- colored top bar -->
         <div

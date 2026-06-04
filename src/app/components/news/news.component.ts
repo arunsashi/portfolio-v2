@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, type OnDestroy, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, type OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FEATURE_GATES } from '@core/const/feature-gates.const';
@@ -31,6 +31,8 @@ const CATEGORY_ICONS: Record<NewsCategory | 'all', string> = {
 })
 export class NewsComponent implements OnDestroy {
   readonly cat = input<string>('');
+  /** Item id to scroll to + highlight (set by ticker links). */
+  readonly item = input<string>('');
 
   private readonly data = inject(DataService);
   private readonly router = inject(Router);
@@ -38,6 +40,76 @@ export class NewsComponent implements OnDestroy {
   private readonly votesSvc = inject(NewsVoteService);
   protected readonly flags = inject(FeatureFlagService);
   protected readonly gates = FEATURE_GATES;
+
+  // Deep-link highlight (?item=<id> from the ticker): once the data is in,
+  // scroll the card into view and pulse it briefly.
+  protected readonly highlightId = signal<string | null>(null);
+  private highlightDone = false;
+  private readonly highlightEffect = effect(() => {
+    const target = this.item();
+    const items = this.allItems();
+    if (!target || this.highlightDone || items.length === 0) return;
+    if (!items.some((i) => i.id === target)) return;
+    this.highlightDone = true;
+
+    const reduced =
+      typeof matchMedia !== 'undefined' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    setTimeout(() => {
+      const card = document.getElementById(`news-${target}`);
+      card?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+      // Set once and keep it: the animation plays a single iteration and
+      // goes quiet. Removing the class later would hand the animation slot
+      // back to the reveal directive's fade-in-up, replaying the entrance.
+      this.highlightId.set(target);
+      if (card && !reduced) {
+        // Let the smooth scroll mostly land before the confetti pops.
+        setTimeout(() => {
+          this.spawnHighlightSparks(card);
+        }, 350);
+      }
+    }, 150);
+  });
+
+  /** Card-scale confetti: theme-colored squares pop off the card's edges. */
+  private spawnHighlightSparks(card: HTMLElement): void {
+    const colors = [
+      'var(--color-accent-yellow)',
+      'var(--color-accent-neon-green)',
+      'var(--color-accent-teal)',
+      'var(--color-accent-hotpink)',
+    ];
+    const container = document.createElement('span');
+    container.className = 'card-burst';
+    container.setAttribute('aria-hidden', 'true');
+
+    for (let i = 0; i < 12; i++) {
+      const spark = document.createElement('span');
+      spark.className = 'card-spark';
+      const side = i % 4; // top / right / bottom / left
+      const along = `${10 + Math.random() * 80}%`;
+      const dist = 26 + Math.random() * 30;
+      const drift = (Math.random() - 0.5) * 30;
+      let dx = drift;
+      let dy = drift;
+      if (side === 0) { spark.style.left = along; spark.style.top = '0%'; dy = -dist; }
+      if (side === 1) { spark.style.left = '100%'; spark.style.top = along; dx = dist; }
+      if (side === 2) { spark.style.left = along; spark.style.top = '100%'; dy = dist; }
+      if (side === 3) { spark.style.left = '0%'; spark.style.top = along; dx = -dist; }
+      spark.style.setProperty('--dx', `${dx}px`);
+      spark.style.setProperty('--dy', `${dy}px`);
+      spark.style.setProperty('--rot', `${Math.round((Math.random() - 0.5) * 360)}deg`);
+      spark.style.setProperty('--spark-color', colors[i % colors.length]);
+      spark.style.animationDelay = `${Math.round(Math.random() * 180)}ms`;
+      container.appendChild(spark);
+    }
+
+    card.appendChild(container);
+    setTimeout(() => {
+      container.remove();
+    }, 1100);
+  }
 
   // Dwell-time tracking (flushed on leave / archive close).
   private readonly pageEnteredAt = Date.now();
