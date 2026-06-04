@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import {ChangeDetectionStrategy, Component, effect, inject, signal} from '@angular/core';
 
 import { AnalyticsService } from '@core/analytics/analytics.service';
 import { LoadingService } from '@core/loading/loading.service';
@@ -24,16 +24,22 @@ import { LoadingService } from '@core/loading/loading.service';
     @if (failed()) {
       <div class="pl__card pl__card--error" role="alert">
         <span class="pl__sticker" aria-hidden="true">Oops!</span>
-        <span class="pl__emoji" aria-hidden="true">🚀💥</span>
+        <span class="pl__crash" aria-hidden="true">
+          <i class="fa-solid fa-rocket pl__rocket"></i>
+          <i class="fa-solid fa-burst pl__burst"></i>
+        </span>
         <h1 class="pl__title">Houston, we have a problem.</h1>
         <p class="pl__body">
           My data API appears to be taking an unscheduled nap. It's not you —
           it's my cloud. Give it a minute, then try again.
         </p>
         <button type="button" class="pl__retry" (click)="retry()">
-          <span aria-hidden="true">🔄</span> Try again
+          <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Try again
         </button>
-        <p class="pl__small">Still broken? The hamsters have been notified. 🐹</p>
+        <p class="pl__small">
+          Still broken? The hamsters have been notified.
+          <i class="fa-solid fa-paw" aria-hidden="true"></i>
+        </p>
       </div>
     } @else {
       <div class="pl__card" role="status" aria-live="polite">
@@ -133,9 +139,23 @@ import { LoadingService } from '@core/loading/loading.service';
         font-family: 'Space Mono', ui-monospace, monospace;
       }
 
-      .pl__emoji {
-        font-size: 2.6rem;
+      .pl__crash {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
         line-height: 1;
+      }
+
+      .pl__rocket {
+        font-size: 2.4rem;
+        color: var(--color-ink, #1a1a1a);
+        transform: rotate(135deg); /* nose-down: the crash in progress */
+      }
+
+      .pl__burst {
+        font-size: 2.8rem;
+        color: var(--color-accent-pink, #ff5da2);
+        -webkit-text-stroke: 2px var(--color-ink, #1a1a1a);
       }
 
       .pl__title {
