@@ -15,21 +15,10 @@
   </span>
 
   <div
-    #scroller
     appDragScroll
+    appMarquee
     tabindex="0"
     class="flex select-none overflow-x-auto py-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-    (pointerenter)="pause()"
-    (pointerleave)="resume()"
-    (pointerdown)="dragStart()"
-    (pointerup)="dragEnd()"
-    (pointercancel)="dragEnd()"
-    (focusin)="pause()"
-    (focusout)="resume()"
-    (touchstart)="pause(); dragStart()"
-    (touchend)="resume()"
-    (touchcancel)="resume()"
-    (wheel)="onWheel($event)"
   >
     <div class="flex w-max">
       @for (loop of [0, 1]; track loop) {

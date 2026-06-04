@@ -1,17 +1,24 @@
 <section id="testimonials" class="container-page overflow-hidden py-12" aria-labelledby="testimonials-heading">
   <app-section-heading title="What People Say" headingId="testimonials-heading" bg="purple" />
 
+  <!-- Auto-scrolling marquee (like the ticker): the card list is rendered
+       twice so the wrap between copies is invisible; clones are aria-hidden.
+       Hover/focus pauses, drag/wheel browses. Scroll-snap is intentionally
+       absent — it would fight the JS-driven scroll position. -->
   <ul
     appDragScroll
-    class="flex snap-x snap-mandatory gap-8 overflow-x-auto pb-4 select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    appMarquee
+    [appMarqueeSpeed]="40"
+    class="flex gap-8 overflow-x-auto pb-4 select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     tabindex="0"
-    aria-label="Testimonials, scroll or drag horizontally to read more"
+    aria-label="Testimonials — auto-scrolling; hover to pause, scroll or drag to read more"
   >
-    @for (t of testimonials(); track t.id; let i = $index) {
+    @for (t of doubled(); track $index; let i = $index) {
       <li
         appReveal
         [revealDelay]="(i % 3) + 1"
-        class="flex min-w-0 flex-[0_0_90%] snap-start flex-col rounded-2xl border-4 border-line bg-surface p-8 shadow-hard-xl md:flex-[0_0_60%] lg:flex-[0_0_40%]"
+        [attr.aria-hidden]="i >= realCount() ? 'true' : null"
+        class="flex min-w-0 flex-[0_0_90%] shrink-0 flex-col rounded-2xl border-4 border-line bg-surface p-8 shadow-hard-xl md:flex-[0_0_60%] lg:flex-[0_0_40%]"
       >
         <i class="fa-solid fa-quote-right mb-6 text-4xl text-accent-pink" aria-hidden="true"></i>
         <p class="mb-8 flex-1 text-xl font-bold leading-relaxed text-ink">"{{ t.quote }}"</p>
@@ -34,8 +41,7 @@
     }
   </ul>
 
-  <p class="mt-8 flex animate-pulse items-center justify-center gap-2 text-sm font-black uppercase text-muted">
-    <span aria-hidden="true">←</span> Swipe to read more <span aria-hidden="true">→</span>
+  <p class="mt-8 flex items-center justify-center gap-2 text-sm font-black uppercase text-muted">
+    <span aria-hidden="true">←</span> Hover to pause &middot; drag to browse <span aria-hidden="true">→</span>
   </p>
 </section>
-  
