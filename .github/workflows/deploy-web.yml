@@ -130,6 +130,9 @@ jobs:
           git checkout -- src/environments/environment.prod.ts
           git add package.json package-lock.json
           git commit -m "chore(release): ui v$v [skip ci]"
+          # Drop any other build-generated changes to tracked files so the
+          # rebase always starts from a clean tree.
+          git checkout -- .
           git pull --rebase origin main
           git tag -a "ui-v$v" -m "ui v$v"
           git push --follow-tags origin HEAD:main

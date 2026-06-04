@@ -60,6 +60,13 @@ export class AnalyticsService {
     this.log('linkly_click', label, { url });
   }
 
+  /** The initial-load error page was shown (API outage as seen by a visitor). */
+  errorPageView(): void {
+    this.log('error_page_view', undefined, {
+      path: globalThis.location?.pathname ?? '',
+    });
+  }
+
   private classifyReferrer(ref: string): string {
     if (!ref) return 'Direct';
     let host = '';

@@ -39,5 +39,3 @@ yarn-error.log*
 !/_names.txt
 
 !/_tsc.log
-/data/seed/node_modules
-/data/seed/package-lock.json

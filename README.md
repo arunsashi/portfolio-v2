@@ -13,6 +13,7 @@ This repo owns **application code and CI/CD**. All **Azure provisioning** (creat
 | Angular front end, Functions API code | **this repo** (`Portfolio-v2`) |
 | Build & deploy pipelines (GitHub Actions) | **this repo** (`.github/workflows/`) |
 | Cosmos DB, Function App, Static Web App, RBAC, custom domain | **`infrastructure`** (Bicep modules + per-project deploy) |
+| Cosmos seed data + seeder script (personal content) | **`infrastructure`** (private) — `app/projects/portfolio/seed/` |
 
 The contract between them: `infrastructure` creates the resources and exposes their identifiers (SWA deployment token, Function App name, OIDC identity); this repo consumes them as repo secrets/variables and ships code into the already-provisioned resources. CI/CD here never creates or modifies Azure resources.
 
@@ -69,7 +70,6 @@ Rooted at `/api`, all anonymous:
 │   └── src/
 │       ├── cosmos.ts         singleton CosmosClient (keyless) + DTO cleaning
 │       └── functions/        profile.ts, blog.ts, contact.ts
-├── data/seed/                local seed JSON
 ├── public/                   static assets
 ├── staticwebapp.config.json  SWA routing, headers, CSP
 ├── proxy.conf.json           dev proxy: /api → localhost:7071

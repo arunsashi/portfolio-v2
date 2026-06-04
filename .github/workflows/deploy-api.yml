@@ -94,7 +94,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add api/package.json
+          # npm version also bumps the lockfile's version field when one exists.
+          if [ -f api/package-lock.json ]; then git add api/package-lock.json; fi
           git commit -m "chore(release): api v$v [skip ci]"
+          # Drop any other build-generated changes to tracked files so the
+          # rebase always starts from a clean tree.
+          git checkout -- .
           git pull --rebase origin main
           git tag -a "api-v$v" -m "api v$v"
           git push --follow-tags origin HEAD:main
