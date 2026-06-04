@@ -180,8 +180,20 @@ async function newsRefresh(_timer: Timer, ctx: InvocationContext): Promise<void>
   const container = getDatabase().container('news');
   await container.items.upsert({ id: 'latest', ...report });
 
+  // Append every item to the archive as its own document. Item ids are
+  // stable kebab-case slugs, so a story that runs on consecutive days
+  // upserts onto itself instead of duplicating. `docType` separates
+  // archive items from the 'latest' report doc in queries.
+  for (const item of report.items) {
+    await container.items.upsert({
+      ...item,
+      docType: 'item',
+      reportDate: report.generatedAt,
+    });
+  }
+
   ctx.log(
-    `News refresh complete — ${report.items.length} items stored, generatedAt=${report.generatedAt}`,
+    `News refresh complete — ${report.items.length} items stored (+archived), generatedAt=${report.generatedAt}`,
   );
   ctx.log(
     `Prompt cache: ${response.usage.cache_read_input_tokens ?? 0} read / ${response.usage.cache_creation_input_tokens ?? 0} created`,

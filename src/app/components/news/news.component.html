@@ -49,7 +49,43 @@
         <span class="ml-0.5 opacity-60">({{ categoryCount()[opt.key] }})</span>
       </button>
     }
+
+    <!-- archive toggle: on page load only the latest report is fetched; the
+         archive API is called lazily the first time this is switched on -->
+    <button
+      type="button"
+      (click)="setView(showArchive() ? 'latest' : 'archive')"
+      [attr.aria-pressed]="showArchive()"
+      class="flex cursor-pointer items-center gap-2 border-4 border-line px-4 py-2 font-mono text-sm font-bold uppercase tracking-wide shadow-hard-sm transition-transform active:translate-y-0.5 sm:ml-auto"
+      [class]="showArchive()
+        ? 'bg-accent-pink text-ink'
+        : 'bg-surface text-ink hover:bg-accent-pink'"
+    >
+      <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+      Archive
+    </button>
   </div>
+
+  <!-- archive search -->
+  @if (showArchive()) {
+    <div class="-mt-4 mb-10 max-w-md" appReveal>
+      <label for="news-search" class="sr-only">Search the news archive</label>
+      <div class="relative">
+        <i
+          class="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+          aria-hidden="true"
+        ></i>
+        <input
+          id="news-search"
+          type="search"
+          [value]="searchQuery()"
+          (input)="onSearch($event)"
+          placeholder="Search title, summary or tags…"
+          class="w-full border-4 border-line bg-surface py-3 pl-11 pr-4 font-mono text-sm shadow-hard-sm outline-none focus:ring-4 focus:ring-accent-pink"
+        />
+      </div>
+    </div>
+  }
 
   <!-- card grid -->
   <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -84,6 +120,14 @@
             }
           </div>
 
+          <!-- archive: when this item appeared in a briefing -->
+          @if (showArchive() && item.reportDate) {
+            <p class="font-mono text-[11px] text-muted/70">
+              <i class="fa-solid fa-clock-rotate-left mr-1" aria-hidden="true"></i>
+              In briefing: {{ item.reportDate | date: 'MMM d, yyyy' }}
+            </p>
+          }
+
           <!-- source link -->
           @if (item.sourceUrl) {
             <a
@@ -100,8 +144,21 @@
       </article>
     }
 
-    @if (filteredItems().length === 0) {
-      <p class="col-span-full font-mono text-sm text-muted">No items in this category yet.</p>
+    @if (archiveLoading()) {
+      <p class="col-span-full font-mono text-sm text-muted">
+        <i class="fa-solid fa-spinner fa-spin mr-1.5" aria-hidden="true"></i>
+        Digging through the archive…
+      </p>
+    } @else if (filteredItems().length === 0) {
+      <p class="col-span-full font-mono text-sm text-muted">
+        @if (showArchive() && searchQuery()) {
+          Nothing matches that search/filter.
+        } @else if (showArchive()) {
+          Nothing older than the current briefing yet — everything recent is on the Latest view.
+        } @else {
+          No items in this category yet.
+        }
+      </p>
     }
   </div>
 

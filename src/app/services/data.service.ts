@@ -5,6 +5,7 @@ import type {
   BlogPost,
   ContactRequest,
   Experience,
+  NewsItem,
   NewsReport,
   Profile,
   Project,
@@ -71,6 +72,13 @@ export class DataService {
     return this.http
       .get<NewsReport>(this.url('news'))
       .pipe(catchError(() => of<NewsReport>({ generatedAt: '', items: [] })));
+  }
+
+  /** Full news archive — every item ever published, newest first. */
+  getNewsArchive(): Observable<NewsItem[]> {
+    return this.http
+      .get<NewsItem[]>(this.url('news/archive'))
+      .pipe(catchError(() => of<NewsItem[]>([])));
   }
 
   /** Submit the contact form (the one write endpoint). */

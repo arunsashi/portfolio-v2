@@ -1,9 +1,9 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { RevealDirective } from '@core/directives/reveal.directive';
-import type { NewsCategory } from '@core/entities';
+import type { NewsCategory, NewsItem } from '@core/entities';
 import { AccentPipe } from '@core/pipes/accent.pipe';
 import { DataService } from '@core/services/data.service';
 
@@ -32,7 +32,27 @@ export class NewsComponent {
 
   private readonly report = toSignal(this.data.getNews());
 
+  // Archive mode: every item ever published (lazy-loaded on first toggle),
+  // searchable, newest -> oldest (the API returns it pre-sorted).
+  protected readonly showArchive = signal(false);
+  protected readonly searchQuery = signal('');
+  protected readonly archiveLoading = signal(false);
+  private readonly archiveItems = signal<NewsItem[]>([]);
+  private archiveLoaded = false;
+
   protected readonly allItems = computed(() => this.report()?.items ?? []);
+
+  /** Ids currently shown on the Latest view. */
+  private readonly latestIds = computed(() => new Set(this.allItems().map((i) => i.id)));
+
+  /** Items backing the current view. The archive STORES everything, but the
+   *  archive VIEW shows only items older than the current briefing — anything
+   *  still on Latest is filtered out so the two views never repeat. */
+  private readonly baseItems = computed<NewsItem[]>(() => {
+    if (!this.showArchive()) return this.allItems();
+    const current = this.latestIds();
+    return this.archiveItems().filter((i) => !current.has(i.id));
+  });
   protected readonly generatedAt = computed(() => this.report()?.generatedAt ?? null);
 
   protected readonly activeFilter = computed<NewsCategory | 'all'>(() => {
@@ -42,12 +62,24 @@ export class NewsComponent {
 
   protected readonly filteredItems = computed(() => {
     const filter = this.activeFilter();
-    const items = this.allItems();
-    return filter === 'all' ? items : items.filter((i) => i.category === filter);
+    const query = this.searchQuery().trim().toLowerCase();
+    let items = this.baseItems();
+    if (filter !== 'all') {
+      items = items.filter((i) => i.category === filter);
+    }
+    if (this.showArchive() && query) {
+      items = items.filter(
+        (i) =>
+          i.title.toLowerCase().includes(query) ||
+          i.summary.toLowerCase().includes(query) ||
+          i.tags.some((t) => t.toLowerCase().includes(query)),
+      );
+    }
+    return items;
   });
 
   protected readonly categoryCount = computed(() => {
-    const items = this.allItems();
+    const items = this.baseItems();
     return {
       all: items.length,
       'ui-ux': items.filter((i) => i.category === 'ui-ux').length,
@@ -69,6 +101,28 @@ export class NewsComponent {
 
   protected categoryIcon(cat: NewsCategory): string {
     return CATEGORY_ICONS[cat];
+  }
+
+  /** Switch between the latest report and the full archive. */
+  protected setView(view: 'latest' | 'archive'): void {
+    const archive = view === 'archive';
+    if (archive === this.showArchive()) return;
+    this.showArchive.set(archive);
+    if (!archive) {
+      this.searchQuery.set('');
+      return;
+    }
+    if (this.archiveLoaded) return;
+    this.archiveLoaded = true;
+    this.archiveLoading.set(true);
+    this.data.getNewsArchive().subscribe((items) => {
+      this.archiveItems.set(items);
+      this.archiveLoading.set(false);
+    });
+  }
+
+  protected onSearch(event: Event): void {
+    this.searchQuery.set((event.target as HTMLInputElement).value);
   }
 
   protected setFilter(cat: NewsCategory | 'all'): void {

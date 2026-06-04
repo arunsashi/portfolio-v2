@@ -57,6 +57,12 @@ module.exports = tseslint.config(
         'error',
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
       ],
+      // Angular components/directives are legitimately empty classes — the
+      // decorator carries the behavior. Still bans undecorated empty classes.
+      '@typescript-eslint/no-extraneous-class': [
+        'error',
+        { allowWithDecorator: true },
+      ],
 
       // No empty or dead code.
       'no-empty-function': 'off',
