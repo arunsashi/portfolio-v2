@@ -1,6 +1,6 @@
 {
   "name": "portfolio-api",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Read-only Azure Functions API for the portfolio (Node v4 model). Deployed to a standalone Function App provisioned by the infrastructure repo.",
   "private": true,
   "main": "dist/src/functions/*.js",
