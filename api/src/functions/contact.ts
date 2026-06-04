@@ -195,7 +195,17 @@ async function sendWhatsAppNotification(payload: ContactRequest, ctx: Invocation
   const body = new URLSearchParams({
     From: from,
     To: to,
-    Body: `New portfolio contact: ${payload.name} (${payload.email}) - ${payload.subject}`,
+    Body: [
+      '*\u{1F4EC} New portfolio enquiry*',
+      '',
+      `*From:* ${payload.name}`,
+      `*Email:* ${payload.email}`,
+      `*Subject:* ${payload.subject}`,
+      '',
+      limit(payload.details, 800),
+      '',
+      '_via arunsudi.dev_',
+    ].join('\n'),
   });
 
   const auth = Buffer.from(`${sid}:${token}`).toString('base64');
@@ -223,6 +233,43 @@ function isEmail(v: string): boolean {
 
 function limit(v: string, n: number): string {
   return v.length <= n ? v : v.slice(0, n);
+}
+
+/** Escape visitor-supplied text before embedding it in the HTML email. */
+function escapeHtml(v: string): string {
+  return v
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Neo-brutalist HTML notification (inline styles — email-client safe). */
+function renderEmailHtml(payload: ContactRequest): string {
+  const name = escapeHtml(payload.name);
+  const email = escapeHtml(payload.email);
+  const subject = escapeHtml(payload.subject);
+  const details = escapeHtml(payload.details);
+
+  return [
+    '<div style="margin:0;padding:24px;background:#f5f5dc;font-family:Inter,Arial,sans-serif;color:#1a1a1a;">',
+    '<div style="max-width:560px;margin:0 auto;background:#ffffff;border:4px solid #1a1a1a;box-shadow:8px 8px 0 0 #1a1a1a;border-radius:12px;overflow:hidden;">',
+    '<div style="background:#ff6b9d;border-bottom:4px solid #1a1a1a;padding:16px 24px;">',
+    '<h1 style="margin:0;font-size:20px;font-weight:900;text-transform:uppercase;">&#128236; New portfolio enquiry</h1>',
+    '</div>',
+    '<div style="padding:24px;">',
+    '<table style="width:100%;border-collapse:collapse;font-size:15px;">',
+    `<tr><td style="padding:6px 0;font-weight:700;width:90px;">From</td><td style="padding:6px 0;">${name}</td></tr>`,
+    `<tr><td style="padding:6px 0;font-weight:700;">Email</td><td style="padding:6px 0;"><a href="mailto:${email}" style="color:#e60076;">${email}</a></td></tr>`,
+    `<tr><td style="padding:6px 0;font-weight:700;">Subject</td><td style="padding:6px 0;">${subject}</td></tr>`,
+    '</table>',
+    `<div style="margin-top:16px;padding:16px;background:#f5f5dc;border:2px solid #1a1a1a;border-radius:8px;white-space:pre-wrap;line-height:1.5;">${details}</div>`,
+    '<p style="margin:20px 0 0;font-size:12px;color:#44403c;">Sent from arunsudi.dev &middot; Reply directly to respond.</p>',
+    '</div>',
+    '</div>',
+    '</div>',
+  ].join('');
 }
 
 async function safeText(res: Response): Promise<string> {
