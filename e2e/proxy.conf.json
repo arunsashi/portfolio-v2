@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "https://func-arunsudi-prod.azurewebsites.net",
+    "secure": true,
+    "changeOrigin": true
+  }
+}

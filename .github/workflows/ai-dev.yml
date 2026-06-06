@@ -1,0 +1,73 @@
+name: ai-dev
+
+# Developer agent — implements one ticket, branches, opens a PR, hands to QA.
+# Triggered by the Monitor or the PRD-approval flow via repository_dispatch.
+# client_payload: { card_id, type (feature|bugfix|chore|hotfix), summary, notion_url }
+on:
+  repository_dispatch:
+    types: [ai-dev]
+  workflow_dispatch:
+    inputs:
+      type:
+        description: branch type (feature|bugfix|chore|hotfix)
+        required: true
+        default: feature
+      summary:
+        description: what to build/fix
+        required: true
+      card_id:
+        description: Notion card id (optional)
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  develop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_BOARD_ID: ${{ vars.NOTION_BOARD_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Compose prompt from playbook
+        env:
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+          WF_TYPE: ${{ github.event.inputs.type }}
+          WF_SUMMARY: ${{ github.event.inputs.summary }}
+          WF_CARD: ${{ github.event.inputs.card_id }}
+        run: |
+          {
+            echo 'PROMPT<<__EOF__'
+            cat docs/agents/developer.md
+            echo ''
+            echo 'Ticket context (JSON from repository_dispatch, may be empty for manual runs):'
+            echo "$PAYLOAD"
+            echo "Manual inputs (if present): type=$WF_TYPE summary=$WF_SUMMARY card_id=$WF_CARD"
+            echo ''
+            echo 'Implement the change now: create the branch, code it, verify (lint/tsc/build), open a PR to main, update the Notion card to In progress, and request QA. Do NOT merge.'
+            echo '__EOF__'
+          } >> "$GITHUB_ENV"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: ${{ env.PROMPT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --mcp-config .github/agents/mcp.json
+            --allowedTools "Read,Write,Edit,Grep,Glob,Bash(git:*),Bash(gh:*),Bash(npm:*),Bash(npx:*),mcp__notion"

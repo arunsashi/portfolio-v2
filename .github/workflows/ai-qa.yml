@@ -1,0 +1,55 @@
+name: ai-qa
+
+# QA agent — when the Developer labels a PR `needs-qa`, writes Playwright e2e
+# specs for the change on the same branch, runs them, and reports a verdict.
+# On pass: signals ready for review. On fail: QA notes back to the Developer.
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  qa:
+    if: ${{ github.event.label.name == 'needs-qa' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_BOARD_ID: ${{ vars.NOTION_BOARD_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Compose prompt from playbook
+        run: |
+          {
+            echo 'PROMPT<<__EOF__'
+            cat docs/agents/qa.md
+            echo ''
+            echo "This is PR #${{ github.event.pull_request.number }} on branch ${{ github.event.pull_request.head.ref }}."
+            echo 'Write e2e specs under e2e/ for this change, run `npm run test:e2e`, then post your verdict on the PR and update the Notion card. Commit any new specs to this branch. If tests fail, leave QA notes and do not approve.'
+            echo '__EOF__'
+          } >> "$GITHUB_ENV"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: ${{ env.PROMPT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --mcp-config .github/agents/mcp.json
+            --allowedTools "Read,Write,Edit,Grep,Glob,Bash(git:*),Bash(gh:*),Bash(npm:*),Bash(npx:*),mcp__notion"

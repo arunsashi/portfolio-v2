@@ -1,0 +1,45 @@
+name: ai-pr-review
+
+# PR-Review agent — one of the two required approvals (the other is Arun).
+# Reviews every PR against docs/CODING-STANDARDS.md. Re-runs on each push so
+# re-review happens after the Developer addresses comments.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compose prompt from playbook
+        run: |
+          {
+            echo 'PROMPT<<__EOF__'
+            cat docs/agents/pr-review.md
+            echo ''
+            echo "Review pull request #${{ github.event.pull_request.number }} in this repo now."
+            echo "Use the gh CLI to read the diff and to post review comments / your verdict."
+            echo "Approve only if it fully meets the standards and CI is green; otherwise request changes with specific comments."
+            echo '__EOF__'
+          } >> "$GITHUB_ENV"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: ${{ env.PROMPT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --allowedTools "Read,Grep,Glob,Bash(gh:*),Bash(git:*)"

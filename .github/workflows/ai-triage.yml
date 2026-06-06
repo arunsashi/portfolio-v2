@@ -1,0 +1,51 @@
+name: ai-triage
+
+# Monitor / SRE agent — fired by the Azure Monitor alert (via repository_dispatch
+# from the alert webhook relay). Investigates, dedupes, opens a Notion bug card,
+# and dispatches the Developer.
+# client_payload: the Azure alert common-schema JSON.
+on:
+  repository_dispatch:
+    types: [alert-2pct]
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_BOARD_ID: ${{ vars.NOTION_BOARD_ID }}
+      APPINSIGHTS_APP_ID: ${{ secrets.APPINSIGHTS_APP_ID }}
+      APPINSIGHTS_API_KEY: ${{ secrets.APPINSIGHTS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compose prompt from playbook
+        env:
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: |
+          {
+            echo 'PROMPT<<__EOF__'
+            cat docs/agents/monitor.md
+            echo ''
+            echo 'Azure alert payload:'
+            echo "$PAYLOAD"
+            echo ''
+            echo 'Investigate via the Application Insights REST API (APPINSIGHTS_APP_ID / APPINSIGHTS_API_KEY env, query api.applicationinsights.io). Dedupe against open Notion cards. If new, open a bug card and dispatch the developer via: gh api repos/${{ github.repository }}/dispatches -f event_type=ai-dev -F client_payload[...]=...'
+            echo '__EOF__'
+          } >> "$GITHUB_ENV"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: ${{ env.PROMPT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --mcp-config .github/agents/mcp.json
+            --allowedTools "Read,Grep,Glob,Bash(gh:*),Bash(curl:*),mcp__notion"

@@ -1,0 +1,52 @@
+name: ai-plan
+
+# PRD-approval flow. When Arun comments `/approve` on a `prd-proposal` issue,
+# the Strategist turns the approved PRD into Notion task cards and dispatches the
+# Developer for the first task.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+jobs:
+  plan:
+    # Only on prd-proposal issues, only an /approve comment, only from the repo owner.
+    if: >-
+      ${{ !github.event.issue.pull_request
+      && contains(github.event.issue.labels.*.name, 'prd-proposal')
+      && startsWith(github.event.comment.body, '/approve')
+      && github.event.comment.user.login == github.repository_owner }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_BOARD_ID: ${{ vars.NOTION_BOARD_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compose prompt from playbook
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          {
+            echo 'PROMPT<<__EOF__'
+            cat docs/agents/strategist.md
+            echo ''
+            echo "Arun approved the PRD in issue #$ISSUE_NUMBER. Read that issue (gh issue view $ISSUE_NUMBER)."
+            echo 'Break the approved PRD into discrete task cards on the Notion board (Status: To-do, Type: PRD-task, Source: ai-strategist). Then dispatch the developer for the FIRST task via: gh api repos/${{ github.repository }}/dispatches -f event_type=ai-dev. Finally comment on the issue with the created card links.'
+            echo '__EOF__'
+          } >> "$GITHUB_ENV"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: ${{ env.PROMPT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --mcp-config .github/agents/mcp.json
+            --allowedTools "Read,Grep,Glob,Bash(gh:*),mcp__notion"

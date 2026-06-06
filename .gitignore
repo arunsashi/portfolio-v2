@@ -39,3 +39,5 @@ yarn-error.log*
 !/_names.txt
 
 !/_tsc.log
+/docs/ai-maintenance-SETUP.md
+/docs/ai-maintenance-system-prd.md
