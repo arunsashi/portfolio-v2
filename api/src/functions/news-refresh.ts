@@ -1,4 +1,10 @@
-import { app, InvocationContext, Timer } from '@azure/functions';
+import {
+  app,
+  HttpRequest,
+  HttpResponseInit,
+  InvocationContext,
+  Timer,
+} from '@azure/functions';
 import Anthropic from '@anthropic-ai/sdk';
 
 import { getDatabase } from '../cosmos';
@@ -198,11 +204,15 @@ async function buildAudienceSignal(ctx: InvocationContext): Promise<string> {
   }
 }
 
-async function newsRefresh(_timer: Timer, ctx: InvocationContext): Promise<void> {
+/**
+ * Generate today's briefing and persist it (latest doc + archive items).
+ * Returns the item count. Throws if the API key is missing or Claude doesn't
+ * return the expected tool call, so callers can surface the failure.
+ */
+async function runNewsRefresh(ctx: InvocationContext): Promise<number> {
   const apiKey = process.env['ANTHROPIC_API_KEY'];
   if (!apiKey) {
-    ctx.error('ANTHROPIC_API_KEY is not configured — skipping news refresh.');
-    return;
+    throw new Error('ANTHROPIC_API_KEY is not configured.');
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -273,9 +283,63 @@ async function newsRefresh(_timer: Timer, ctx: InvocationContext): Promise<void>
   ctx.log(
     `Prompt cache: ${response.usage.cache_read_input_tokens ?? 0} read / ${response.usage.cache_creation_input_tokens ?? 0} created`,
   );
+
+  return report.items.length;
+}
+
+// ---------------------------------------------------------------------------
+// Timer trigger — runs daily at 06:00 UTC
+// ---------------------------------------------------------------------------
+
+async function newsRefreshTimer(_timer: Timer, ctx: InvocationContext): Promise<void> {
+  ctx.log('Daily news refresh (timer) starting…');
+  try {
+    await runNewsRefresh(ctx);
+  } catch (err) {
+    // Don't throw from the timer — a missing key or transient API error
+    // shouldn't spam the runtime with unhandled failures; the next run retries.
+    ctx.error('Scheduled news refresh failed:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Manual trigger — POST /api/news/refresh, protected by Azure's admin key.
+// Lets us force a refresh out of band (e.g. right after wiring the API key)
+// instead of waiting for 06:00 UTC. authLevel 'admin' requires the Function
+// App master key (?code=… or x-functions-key header) — no custom secret.
+// ---------------------------------------------------------------------------
+
+async function newsRefreshHttp(
+  _req: HttpRequest,
+  ctx: InvocationContext,
+): Promise<HttpResponseInit> {
+  ctx.log('Manual news refresh (HTTP) starting…');
+  try {
+    const count = await runNewsRefresh(ctx);
+    return {
+      status: 200,
+      jsonBody: { ok: true, items: count },
+      headers: { 'Cache-Control': 'no-store' },
+    };
+  } catch (err) {
+    ctx.error('Manual news refresh failed:', err);
+    const message = err instanceof Error ? err.message : 'Refresh failed.';
+    return {
+      status: 500,
+      jsonBody: { ok: false, error: message },
+      headers: { 'Cache-Control': 'no-store' },
+    };
+  }
 }
 
 app.timer('newsRefresh', {
   schedule: '0 0 6 * * *',
-  handler: newsRefresh,
+  handler: newsRefreshTimer,
+});
+
+app.http('newsRefreshManual', {
+  methods: ['POST'],
+  authLevel: 'admin',
+  route: 'news/refresh',
+  handler: newsRefreshHttp,
 });
