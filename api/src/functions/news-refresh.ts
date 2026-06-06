@@ -225,10 +225,13 @@ async function runNewsRefresh(ctx: InvocationContext): Promise<number> {
   const audienceSignal = await buildAudienceSignal(ctx);
 
   const response = await client.messages.create({
-    model: 'claude-opus-4-8',
+    model: 'claude-sonnet-4-6',
     max_tokens: 16000,
     // Prompt caching: the static system prompt (anchor sources + instructions)
-    // is cached for 5 minutes — saves input tokens on retries and re-runs.
+    // is marked cacheable. Default ('ephemeral') is a 5-minute TTL — it only
+    // pays off on re-runs within that window (e.g. a manual refresh right after
+    // the timer, or a retry); back-to-back daily runs are 24h apart, so the
+    // cache will have expired and the first run each day is a cache miss.
     system: [
       {
         type: 'text',
@@ -323,12 +326,35 @@ async function newsRefreshHttp(
     };
   } catch (err) {
     ctx.error('Manual news refresh failed:', err);
-    const message = err instanceof Error ? err.message : 'Refresh failed.';
     return {
       status: 500,
-      jsonBody: { ok: false, error: message },
+      jsonBody: { ok: false, error: describeError(err) },
       headers: { 'Cache-Control': 'no-store' },
     };
+  }
+}
+
+/**
+ * Build a diagnostic string from an unknown thrown value. Errors often carry
+ * useful detail outside `.message` — Anthropic SDK errors expose `status` and
+ * `error`, Cosmos errors expose `code` — and `.message` can be empty. Surface
+ * whatever is present so a 500 is actually debuggable from the response.
+ */
+function describeError(err: unknown): string {
+  if (err instanceof Error) {
+    const parts: string[] = [err.name];
+    if (err.message) parts.push(err.message);
+    const extra = err as { status?: unknown; code?: unknown };
+    if (extra.status !== undefined) parts.push(`status=${String(extra.status)}`);
+    if (extra.code !== undefined) parts.push(`code=${String(extra.code)}`);
+    const detail = parts.filter((p) => p !== '').join(' · ');
+    return detail === '' ? 'Unknown error (empty).' : detail;
+  }
+  if (typeof err === 'string' && err !== '') return err;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return 'Unserializable error.';
   }
 }
 
