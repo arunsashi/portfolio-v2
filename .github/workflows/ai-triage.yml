@@ -12,6 +12,7 @@ permissions:
   contents: read
   issues: write
   actions: write
+  id-token: write
 
 jobs:
   triage:
@@ -22,10 +23,21 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       NOTION_BOARD_ID: ${{ vars.NOTION_BOARD_ID }}
-      APPINSIGHTS_APP_ID: ${{ secrets.APPINSIGHTS_APP_ID }}
-      APPINSIGHTS_API_KEY: ${{ secrets.APPINSIGHTS_API_KEY }}
+      # App Insights queried via Azure CLI (OIDC login below) — no API key.
+      APPINSIGHTS_NAME: func-arunsudi-prod-ai
+      AZURE_RESOURCE_GROUP: rg-portfolio-prod
     steps:
       - uses: actions/checkout@v4
+
+      # Authenticate the runner's az CLI via the existing federated credential
+      # (subject repo:<owner>/Portfolio-v2:environment:prod). The agent's az
+      # calls reuse this session — no static App Insights key needed.
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Compose prompt from playbook
         env:
@@ -38,7 +50,7 @@ jobs:
             echo 'Azure alert payload:'
             echo "$PAYLOAD"
             echo ''
-            echo 'Investigate via the Application Insights REST API (APPINSIGHTS_APP_ID / APPINSIGHTS_API_KEY env, query api.applicationinsights.io). Dedupe against open Notion cards. If new, open a bug card and dispatch the developer via: gh api repos/${{ github.repository }}/dispatches -f event_type=ai-dev -F client_payload[...]=...'
+            echo 'Investigate with the Azure CLI (already logged in): run `az monitor app-insights query --app "$APPINSIGHTS_NAME" -g "$AZURE_RESOURCE_GROUP" --analytics-query "<KQL>"` — e.g. recent failed requests grouped by operation, and exceptions joined to them over the alert window. Dedupe against open Notion cards. If new, open a bug card and dispatch the developer via: gh api repos/${{ github.repository }}/dispatches -f event_type=ai-dev -F client_payload[...]=...'
             echo ''
             echo 'BEFORE FINISHING, write two files at the repo root:'
             echo '1) ./triage-report.html — a self-contained, email-friendly HTML FRAGMENT (inline styles only; NO <html>/<head>/<body> tags). Use a neat card layout with a heading and labelled sections: Summary (one line), Severity, Error signature, Root cause, Affected path/endpoint, Evidence (key log/metric facts as a small list), Action taken (duplicate? card created? dev dispatched?). If you created a Notion card, include a styled link to it. Keep colors subtle and readable in both light and dark mail clients (dark text on light cards).'
@@ -55,7 +67,7 @@ jobs:
           claude_args: >-
             --model claude-sonnet-4-6
             --mcp-config .github/agents/mcp.json
-            --allowedTools "Read,Write,Grep,Glob,Bash(gh:*),Bash(curl:*),mcp__notion"
+            --allowedTools "Read,Write,Grep,Glob,Bash(gh:*),Bash(az:*),Bash(curl:*),mcp__notion"
 
       # ---- Durable outputs: run summary, artifact, and rich-HTML email ----
       - name: Publish report to the run summary

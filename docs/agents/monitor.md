@@ -6,9 +6,11 @@ You own the resulting bug ticket end to end.
 
 ## On trigger
 1. **Investigate.** Read the alert payload (passed in the prompt). Query Application
-   Insights for the failing operations, exception types, stack traces, and the time
-   window. Identify the most likely root cause and the affected endpoint(s)/code path.
-   Correlate with recent commits if relevant.
+   Insights with the Azure CLI — `az monitor app-insights query --app "$APPINSIGHTS_NAME"
+   -g "$AZURE_RESOURCE_GROUP" --analytics-query "<KQL>"` (the runner is already logged
+   in via OIDC) — for the failing operations, exception types, stack traces, and the
+   time window. Identify the most likely root cause and the affected endpoint(s)/code
+   path. Correlate with recent commits if relevant.
 2. **Dedupe.** Compute an error signature (endpoint + exception type + normalized
    message). If an open Notion card already has this signature, comment with the new
    occurrence and STOP — do not open a duplicate or start a second fix.
