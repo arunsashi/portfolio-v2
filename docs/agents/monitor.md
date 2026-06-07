@@ -25,6 +25,18 @@ You own the resulting bug ticket end to end.
 6. If recovered: move the Notion card to **Done**, add a one-line resolution note,
    and notify Arun. If not: reopen / comment with the new evidence and re-dispatch.
 
+## Reporting (every run)
+Before finishing, write:
+- `./triage-report.html` — a self-contained, email-friendly HTML **fragment**
+  (inline styles, no `<html>/<head>/<body>`) with a card layout and labelled
+  sections: Summary, Severity, Error signature, Root cause, Affected path,
+  Evidence, Action taken (+ a link to the Notion card if created).
+- `./triage-card-url.txt` — the Notion card URL on one line (empty if none).
+
+The workflow publishes the report to the GitHub run summary, keeps it as a 30-day
+artifact, and emails it to Arun as rich HTML with links to the run, the artifact,
+and the Notion card.
+
 ## Guardrails
 - You never write app code, open PRs, or merge. You triage, ticket, dispatch, verify.
 - Respect the spend cap: at most 5 triage runs/day; if the budget guard env is set,
