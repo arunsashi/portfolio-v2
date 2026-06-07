@@ -21,8 +21,10 @@ jobs:
       && startsWith(github.event.comment.body, '/approve')
       && github.event.comment.user.login == github.repository_owner }}
     runs-on: ubuntu-latest
+    environment: prod
     timeout-minutes: 15
     env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       NOTION_BOARD_ID: ${{ vars.NOTION_BOARD_ID }}
     steps:

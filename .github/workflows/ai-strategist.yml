@@ -15,7 +15,10 @@ permissions:
 jobs:
   strategist:
     runs-on: ubuntu-latest
+    environment: prod
     timeout-minutes: 15
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 

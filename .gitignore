@@ -41,3 +41,4 @@ yarn-error.log*
 !/_tsc.log
 /docs/ai-maintenance-SETUP.md
 /docs/ai-maintenance-system-prd.md
+/docs/agents/VERIFY.md
