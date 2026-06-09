@@ -89,6 +89,11 @@ export class AnalyticsService {
     this.log('news_vote', action, { itemId });
   }
 
+  /** A project detail page was opened. */
+  projectDetailView(slug: string): void {
+    this.log('project_detail_view', slug);
+  }
+
   /** The initial-load error page was shown (API outage as seen by a visitor). */
   errorPageView(): void {
     this.log('error_page_view', undefined, {

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { RevealDirective } from '@core/directives/reveal.directive';
 import { DataService } from '@core/services/data.service';
 import { SectionHeadingComponent } from '@shared/section-heading/section-heading.component';
@@ -11,7 +12,7 @@ import { SectionHeadingComponent } from '@shared/section-heading/section-heading
  */
 @Component({
   selector: 'app-projects',
-  imports: [SectionHeadingComponent, RevealDirective],
+  imports: [SectionHeadingComponent, RevealDirective, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './projects.component.html',
 })
