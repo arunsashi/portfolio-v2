@@ -45,7 +45,8 @@ jobs:
             cat docs/agents/qa.md
             echo ''
             echo "This is PR #${{ github.event.pull_request.number }} on branch ${{ github.event.pull_request.head.ref }}."
-            echo 'Write e2e specs under e2e/ for this change, run `npm run test:e2e`, commit the new specs to this branch, then post your verdict on the PR and update the Notion card.'
+            echo 'Write e2e specs under e2e/ for this change, run `npm run test:e2e`, commit the new specs to this branch, then post your verdict on the PR.'
+            echo 'ALWAYS write the Notion card QA notes property (pass or fail): how you tested — spec file(s) added, scenarios/flows covered (happy path, edge cases, a11y checks), the run result with counts, and on failure which specs failed (expected vs actual).'
             echo 'Find the tracking issue this work came from: read the PR body (gh pr view #${{ github.event.pull_request.number }}) for a "Tracking issue: #N" / "Closes #N" reference, or the linked Notion card.'
             echo 'IF e2e PASSES: comment on that tracking issue naming the exact spec file(s) you added and linking this PR. Do NOT close the issue — it is closed automatically after the change deploys to production. IF e2e FAILS: leave QA notes on the PR for the Developer and do NOT approve.'
             echo '__EOF__'
@@ -54,7 +55,8 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # PAT so QA's spec commits re-trigger e2e / pr-review on the PR.
+          github_token: ${{ secrets.GH_PAT }}
           allowed_bots: 'github-actions'
           prompt: ${{ env.PROMPT }}
           claude_args: >-

@@ -45,7 +45,11 @@ provided, say so.
 2. End the issue with: "Reply `/approve` to turn the chosen PRD into Notion tasks and
    start the dev loop."
 3. Do NOT create Notion cards yet — that happens only after Arun approves (a separate
-   workflow run handles the approved issue).
+   workflow run handles the approved issue). When you do create them (the approval
+   run), set every property the board has — Status (To-do), Type (PRD-task), Source
+   (ai-strategist), a **Date/Due** target (scaled to the task estimate), and
+   **Severity/Priority** (derived from your ranking: #1 = High, rest Medium/Low).
+   Fetch the board schema first and use its exact property names.
 
 ## Guardrails
 - Read-only to production. Never modify code, deploy, or touch Notion in this run.

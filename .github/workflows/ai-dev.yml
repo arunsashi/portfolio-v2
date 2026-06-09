@@ -60,7 +60,8 @@ jobs:
             echo "$PAYLOAD"
             echo "Manual inputs (if present): type=$WF_TYPE summary=$WF_SUMMARY card_id=$WF_CARD"
             echo ''
-            echo 'Implement the change now: create the branch, code it, verify (lint/tsc/build), open a PR to main, update the Notion card to In progress, and request QA. Do NOT merge.'
+            echo 'Implement the change now: create the branch, code it, verify (lint/tsc/build), then PUSH the branch to origin (git push -u origin <branch>) and open a PR with `gh pr create`. Confirm the branch exists on origin before finishing. Then request QA. Do NOT merge.'
+            echo 'Update the Notion card throughout: set it to In progress and record the branch name when you start, then set its PR property to the PR URL once the PR is open — so the branch and PR are both visible on the card.'
             echo 'In the PR body, if the ticket context has an "issue" field, add a line "Tracking issue: #<that number>" so the QA/e2e agent can close it once e2e passes.'
             echo '__EOF__'
           } >> "$GITHUB_ENV"
@@ -68,9 +69,10 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Agents trigger each other via dispatch/cron under GITHUB_TOKEN, so the
-          # actor is the github-actions bot. Scope to it (not '*') to limit the loop surface.
+          # Use a PAT (not GITHUB_TOKEN) so the PR + label this agent creates
+          # actually trigger the downstream e2e / pr-review / qa workflows.
+          # GITHUB_TOKEN-made events do NOT spawn new workflow runs.
+          github_token: ${{ secrets.GH_PAT }}
           allowed_bots: 'github-actions'
           prompt: ${{ env.PROMPT }}
           claude_args: >-

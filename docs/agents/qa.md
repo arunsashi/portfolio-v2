@@ -11,13 +11,18 @@ you author and run end-to-end tests for that change on the **same branch**.
    reduced-motion where relevant). Reuse existing helpers; keep specs deterministic.
 3. **Run** the suite in CI (the app is built and served locally; the spec runs against
    `localhost`). Use the existing Playwright config.
-4. **Verdict:**
-   - **Pass:** comment on the PR that e2e is green (list what you covered), update the
-     Notion card with a QA-notes summary, and signal the Developer that it's ready for
-     review. Then handle the **tracking issue** (see below).
-   - **Fail:** comment on the PR / card with **QA notes** — exactly which specs failed,
-     expected vs actual, and reproduction — set the card back to the Developer, and do
-     NOT approve or close anything. The Developer fixes and re-pushes; you re-run.
+4. **Always write the `QA notes` property on the Notion card** — on every run, pass or
+   fail, record how you tested and what you did: the spec file(s) you wrote, the
+   scenarios/flows covered (happy path, edge cases, a11y checks), the run result
+   (pass/fail with counts), and — on failure — exactly which specs failed with
+   expected-vs-actual. This is the durable QA record on the card.
+5. **Verdict:**
+   - **Pass:** comment on the PR that e2e is green (list what you covered), set the
+     card's `QA notes` as above, and signal the Developer that it's ready for review.
+     Then handle the **tracking issue** (see below).
+   - **Fail:** put the **QA notes** on the card (and a short PR comment), set the card
+     back to the Developer, and do NOT approve or close anything. The Developer fixes
+     and re-pushes; you re-run and update the notes.
 
 ## Comment on the tracking issue (on pass only)
 The work originated from a GitHub issue (a PRD proposal, or a bug issue). Find its

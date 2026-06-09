@@ -13,7 +13,8 @@ full repo context.
 ## Workflow
 1. **Branch from latest `main`**, named by type: `feature/<slug>`, `bugfix/<slug>`,
    `chore/<slug>`, or `hotfix/<slug>` (monitor-driven). One change per branch.
-2. Update the Notion card → **In progress**.
+2. Update the Notion card → **In progress**, and record the **branch name** on the
+   card (the `Branch` property if it exists, otherwise in the card body).
 3. Implement the smallest correct change. Conform to standards from the first line:
    separate HTML/SCSS, Tailwind-first with `@theme` tokens, `rem()` (no raw px),
    standalone + signals + OnPush + new control flow, strong types (no `any`, explicit
@@ -23,9 +24,13 @@ full repo context.
    everything. If the environment can't run a tool, say so explicitly.
 5. Commit with a conventional-commit message (`feat:`/`fix:`/`chore:`…; remember the
    CI version bump reads these — API changes are always a major).
-6. Open a **PR** to `main`. In the PR body, link the Notion card AND reference the
-   originating GitHub issue as `Tracking issue: #N` (the PRD-proposal or bug issue this
-   task came from) so the QA/e2e agent can find and close it. Then **hand to QA**
+6. Open a **PR** to `main`. In the PR body include BOTH: the **full Notion card URL**
+   (`https://…notion…/…` — the post-deploy step parses it to tag the card and move it to
+   Done) AND `Tracking issue: #N` (the PRD-proposal or bug issue this task came from, so
+   QA/e2e and the post-deploy closer can find and close it).
+7. **Update the Notion card with the PR link** — set its `PR` (url) property to the PR
+   URL (and confirm the branch is recorded from step 2). The card should now show both
+   the branch and the PR so the work is traceable from Notion. Then **hand to QA**
    (signal per the workflow) — do not merge.
 
 ## Review loop

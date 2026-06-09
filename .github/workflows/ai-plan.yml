@@ -39,7 +39,10 @@ jobs:
             cat docs/agents/strategist.md
             echo ''
             echo "Arun approved the PRD in issue #$ISSUE_NUMBER. Read that issue (gh issue view $ISSUE_NUMBER)."
-            echo 'Break the approved PRD into discrete task cards on the Notion board (Status: To-do, Type: PRD-task, Source: ai-strategist). Then dispatch the developer for the FIRST task, INCLUDING the tracking issue number so QA can close it later, e.g.:'
+            echo 'First fetch the board schema (Notion MCP) so you use the EXACT property names/options it has. Break the approved PRD into discrete task cards, setting on EACH card: Status=To-do, Type=PRD-task, Source=ai-strategist, plus:'
+            echo '- the Date/Due property = a target date (today + a few days to ~2 weeks, scaled to the task estimate);'
+            echo '- the Severity/Priority property = derived from the PRD ranking (your #1 pick High, the rest Medium/Low).'
+            echo 'Map those to the board\'s actual property names; if a property genuinely does not exist, note it rather than skipping silently. Then dispatch the developer for the FIRST task, INCLUDING the tracking issue number so QA can close it later, e.g.:'
             echo "  gh api repos/${{ github.repository }}/dispatches -f event_type=ai-dev -F 'client_payload[issue]=$ISSUE_NUMBER' -F 'client_payload[type]=feature' -F 'client_payload[summary]=<task summary>' -F 'client_payload[card_id]=<notion card id>'"
             echo 'Finally comment on the issue with the created card links.'
             echo '__EOF__'

@@ -1,9 +1,10 @@
 name: close-issue-on-deploy
 
-# Closes the tracking issue once the change is actually SHIPPED — i.e. after a
-# successful production deploy, not merely when e2e passed or the PR merged.
-# Finds the PR for the deployed commit, reads its "Tracking issue: #N" (or
-# "Closes #N") reference, and closes that issue. Pure gh — no AI/tokens.
+# Finalizes a task once it's actually SHIPPED (successful production deploy):
+#   1. closes the tracking GitHub issue,
+#   2. stamps the released version tag on the Notion card and moves it to Done.
+# Triggered after Deploy web / Deploy API succeed. The issue close is plain gh;
+# the Notion update is a tiny Sonnet step (it maps to the board's real schema).
 on:
   workflow_run:
     workflows: ['Deploy web (Static Web App)', 'Deploy API (Function App)']
@@ -15,41 +16,83 @@ permissions:
   pull-requests: read
 
 jobs:
-  close:
+  finalize:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    environment: prod
+    timeout-minutes: 10
     env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_BOARD_ID: ${{ vars.NOTION_BOARD_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SHA: ${{ github.event.workflow_run.head_sha }}
       REPO: ${{ github.repository }}
       DEPLOY_URL: ${{ github.event.workflow_run.html_url }}
+      DEPLOY_NAME: ${{ github.event.workflow_run.name }}
     steps:
-      - name: Close the tracking issue if the deployed PR references one
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Resolve PR, issue, card and version
+        id: resolve
         run: |
           set -euo pipefail
-
-          # The PR associated with the deployed commit.
           PR=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[0].number' 2>/dev/null || true)
           if [ -z "${PR:-}" ] || [ "$PR" = "null" ]; then
-            echo "No PR found for $SHA — nothing to close."; exit 0
+            echo "No PR for $SHA — nothing to finalize."; exit 0
           fi
-
           BODY=$(gh pr view "$PR" --repo "$REPO" --json body --jq '.body' 2>/dev/null || true)
 
-          # First "Tracking issue: #N" (also accept "Closes #N").
-          ISSUE=$(printf '%s' "$BODY" \
-            | grep -oiE '(tracking issue:|closes)[[:space:]]*#[0-9]+' \
-            | grep -oE '[0-9]+' | head -n1 || true)
-          if [ -z "${ISSUE:-}" ]; then
-            echo "PR #$PR has no tracking-issue reference — skipping."; exit 0
+          ISSUE=$(printf '%s' "$BODY" | grep -oiE '(tracking issue:|closes)[[:space:]]*#[0-9]+' | grep -oE '[0-9]+' | head -n1 || true)
+          CARD_URL=$(printf '%s' "$BODY" | grep -oiE 'https://[a-z.]*notion\.[a-z]+/[^ )]+' | head -n1 || true)
+
+          # Released version from the deployed commit (UI vs API by which deploy ran).
+          if printf '%s' "$DEPLOY_NAME" | grep -qi 'API'; then
+            VER=$(jq -r '.version // empty' api/package.json 2>/dev/null || true)
+          else
+            VER=$(jq -r '.version // empty' package.json 2>/dev/null || true)
           fi
 
+          {
+            echo "pr=$PR"
+            echo "issue=$ISSUE"
+            echo "card_url=$CARD_URL"
+            echo "version=$VER"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Close the tracking issue
+        if: ${{ steps.resolve.outputs.issue != '' }}
+        run: |
+          ISSUE="${{ steps.resolve.outputs.issue }}"
           STATE=$(gh issue view "$ISSUE" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo "")
           if [ "$STATE" = "OPEN" ]; then
             gh issue close "$ISSUE" --repo "$REPO" \
-              --comment "Shipped to production via PR #$PR (deploy: $DEPLOY_URL). Closing the tracking issue."
+              --comment "Shipped to production via PR #${{ steps.resolve.outputs.pr }} (deploy: $DEPLOY_URL). Closing."
             echo "Closed issue #$ISSUE."
           else
             echo "Issue #$ISSUE is ${STATE:-unknown} — skipping (idempotent)."
           fi
+
+      - name: Finalize the Notion card (tag + Done)
+        if: ${{ steps.resolve.outputs.card_url != '' }}
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_bots: 'github-actions'
+          prompt: |
+            A change just deployed to production. Update its Notion card at
+            ${{ steps.resolve.outputs.card_url }} and do nothing else.
+            First fetch the card/board schema so you use the exact property names. Then:
+            - Stamp the released version "v${{ steps.resolve.outputs.version }}" on the card —
+              use a Version/Release/Tag property if one exists, otherwise add it as a tag/
+              multi-select option or append a line to the card body.
+            - Move Status to Done.
+            Reference the deploy run: ${{ env.DEPLOY_URL }}.
+            If the card is already Done, leave it (idempotent).
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --mcp-config .github/agents/mcp.json
+            --allowedTools "mcp__notion"
