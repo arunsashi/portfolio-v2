@@ -61,6 +61,7 @@ jobs:
             echo "Manual inputs (if present): type=$WF_TYPE summary=$WF_SUMMARY card_id=$WF_CARD"
             echo ''
             echo 'Implement the change now: create the branch, code it, verify (lint/tsc/build), open a PR to main, update the Notion card to In progress, and request QA. Do NOT merge.'
+            echo 'In the PR body, if the ticket context has an "issue" field, add a line "Tracking issue: #<that number>" so the QA/e2e agent can close it once e2e passes.'
             echo '__EOF__'
           } >> "$GITHUB_ENV"
 

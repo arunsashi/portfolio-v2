@@ -1,8 +1,10 @@
 name: ai-qa
 
-# QA agent — when the Developer labels a PR `needs-qa`, writes Playwright e2e
-# specs for the change on the same branch, runs them, and reports a verdict.
-# On pass: signals ready for review. On fail: QA notes back to the Developer.
+# QA / e2e agent — when the Developer labels a PR `needs-qa`, writes Playwright
+# e2e specs for the change on the same branch, runs them, and reports a verdict.
+# On pass: comments on the tracking issue noting the spec it wrote and signals
+# ready for review (the issue is closed later, automatically, after the change
+# deploys to production — see close-issue-on-deploy.yml). On fail: QA notes back.
 on:
   pull_request:
     types: [labeled]
@@ -10,6 +12,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
   id-token: write
 
 jobs:
@@ -42,7 +45,9 @@ jobs:
             cat docs/agents/qa.md
             echo ''
             echo "This is PR #${{ github.event.pull_request.number }} on branch ${{ github.event.pull_request.head.ref }}."
-            echo 'Write e2e specs under e2e/ for this change, run `npm run test:e2e`, then post your verdict on the PR and update the Notion card. Commit any new specs to this branch. If tests fail, leave QA notes and do not approve.'
+            echo 'Write e2e specs under e2e/ for this change, run `npm run test:e2e`, commit the new specs to this branch, then post your verdict on the PR and update the Notion card.'
+            echo 'Find the tracking issue this work came from: read the PR body (gh pr view #${{ github.event.pull_request.number }}) for a "Tracking issue: #N" / "Closes #N" reference, or the linked Notion card.'
+            echo 'IF e2e PASSES: comment on that tracking issue naming the exact spec file(s) you added and linking this PR. Do NOT close the issue — it is closed automatically after the change deploys to production. IF e2e FAILS: leave QA notes on the PR for the Developer and do NOT approve.'
             echo '__EOF__'
           } >> "$GITHUB_ENV"
 

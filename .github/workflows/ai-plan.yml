@@ -39,7 +39,9 @@ jobs:
             cat docs/agents/strategist.md
             echo ''
             echo "Arun approved the PRD in issue #$ISSUE_NUMBER. Read that issue (gh issue view $ISSUE_NUMBER)."
-            echo 'Break the approved PRD into discrete task cards on the Notion board (Status: To-do, Type: PRD-task, Source: ai-strategist). Then dispatch the developer for the FIRST task via: gh api repos/${{ github.repository }}/dispatches -f event_type=ai-dev. Finally comment on the issue with the created card links.'
+            echo 'Break the approved PRD into discrete task cards on the Notion board (Status: To-do, Type: PRD-task, Source: ai-strategist). Then dispatch the developer for the FIRST task, INCLUDING the tracking issue number so QA can close it later, e.g.:'
+            echo "  gh api repos/${{ github.repository }}/dispatches -f event_type=ai-dev -F 'client_payload[issue]=$ISSUE_NUMBER' -F 'client_payload[type]=feature' -F 'client_payload[summary]=<task summary>' -F 'client_payload[card_id]=<notion card id>'"
+            echo 'Finally comment on the issue with the created card links.'
             echo '__EOF__'
           } >> "$GITHUB_ENV"
 

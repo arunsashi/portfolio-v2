@@ -23,8 +23,10 @@ full repo context.
    everything. If the environment can't run a tool, say so explicitly.
 5. Commit with a conventional-commit message (`feat:`/`fix:`/`chore:`…; remember the
    CI version bump reads these — API changes are always a major).
-6. Open a **PR** to `main` linking the Notion card. Then **hand to QA** (signal per the
-   workflow) — do not merge.
+6. Open a **PR** to `main`. In the PR body, link the Notion card AND reference the
+   originating GitHub issue as `Tracking issue: #N` (the PRD-proposal or bug issue this
+   task came from) so the QA/e2e agent can find and close it. Then **hand to QA**
+   (signal per the workflow) — do not merge.
 
 ## Review loop
 - When QA fails the change, read the QA notes, fix, and **re-push to the same branch**.

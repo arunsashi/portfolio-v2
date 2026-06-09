@@ -1,0 +1,55 @@
+name: close-issue-on-deploy
+
+# Closes the tracking issue once the change is actually SHIPPED — i.e. after a
+# successful production deploy, not merely when e2e passed or the PR merged.
+# Finds the PR for the deployed commit, reads its "Tracking issue: #N" (or
+# "Closes #N") reference, and closes that issue. Pure gh — no AI/tokens.
+on:
+  workflow_run:
+    workflows: ['Deploy web (Static Web App)', 'Deploy API (Function App)']
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  close:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      REPO: ${{ github.repository }}
+      DEPLOY_URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - name: Close the tracking issue if the deployed PR references one
+        run: |
+          set -euo pipefail
+
+          # The PR associated with the deployed commit.
+          PR=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[0].number' 2>/dev/null || true)
+          if [ -z "${PR:-}" ] || [ "$PR" = "null" ]; then
+            echo "No PR found for $SHA — nothing to close."; exit 0
+          fi
+
+          BODY=$(gh pr view "$PR" --repo "$REPO" --json body --jq '.body' 2>/dev/null || true)
+
+          # First "Tracking issue: #N" (also accept "Closes #N").
+          ISSUE=$(printf '%s' "$BODY" \
+            | grep -oiE '(tracking issue:|closes)[[:space:]]*#[0-9]+' \
+            | grep -oE '[0-9]+' | head -n1 || true)
+          if [ -z "${ISSUE:-}" ]; then
+            echo "PR #$PR has no tracking-issue reference — skipping."; exit 0
+          fi
+
+          STATE=$(gh issue view "$ISSUE" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo "")
+          if [ "$STATE" = "OPEN" ]; then
+            gh issue close "$ISSUE" --repo "$REPO" \
+              --comment "Shipped to production via PR #$PR (deploy: $DEPLOY_URL). Closing the tracking issue."
+            echo "Closed issue #$ISSUE."
+          else
+            echo "Issue #$ISSUE is ${STATE:-unknown} — skipping (idempotent)."
+          fi
