@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   issues: write
+  id-token: write
 
 jobs:
   strategist:
@@ -19,8 +20,22 @@ jobs:
     timeout-minutes: 15
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # Live data sources for grounding the PRDs:
+      APPINSIGHTS_NAME: func-arunsudi-prod-ai
+      AZURE_RESOURCE_GROUP: rg-portfolio-prod
+      # Optional — if set, the agent also pulls product metrics from Statsig.
+      STATSIG_CONSOLE_API_KEY: ${{ secrets.STATSIG_CONSOLE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+
+      # OIDC login so the agent can query App Insights traffic/usage trends
+      # (reuses the deploy federated credential; environment: prod subject).
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Compose prompt from playbook
         run: |
@@ -28,8 +43,15 @@ jobs:
             echo 'PROMPT<<__EOF__'
             cat docs/agents/strategist.md
             echo ''
-            echo "Produce this week's PRD proposal issue now using the gh CLI (gh issue create --label prd-proposal)."
-            echo "After creating it, print the issue URL on a line starting with 'ISSUE_URL='."
+            echo 'GROUND YOUR PROPOSALS IN LIVE DATA before writing PRDs:'
+            echo '- Application Insights (the runner is logged in): run `az monitor app-insights query --app "$APPINSIGHTS_NAME" -g "$AZURE_RESOURCE_GROUP" --analytics-query "<KQL>"` to pull last-30-day trends — page views by page, traffic over time, top/slowest operations, error counts, and the news/archive endpoints traffic.'
+            echo '- If STATSIG_CONSOLE_API_KEY is set, also pull product metrics from the Statsig Console API (https://statsigapi.net/console/v1, header "STATSIG-API-KEY: $STATSIG_CONSOLE_API_KEY") — e.g. top custom events (news votes, source clicks, page time). If the key is empty, skip Statsig and say so.'
+            echo 'Cite the actual numbers you pulled in each PRD\'s "Why now (data)" preface. If a source returns nothing, note it rather than inventing figures.'
+            echo ''
+            echo "Then produce this week's PRD proposal issue using gh (gh issue create --label prd-proposal)."
+            echo 'BEFORE FINISHING, write two files at the repo root:'
+            echo '1) ./strategist-summary.html — an email-friendly HTML FRAGMENT (inline styles, no <html>/<head>/<body>): a short ranked list of the proposed PRDs with one-line rationale each, your #1 pick highlighted, and a one-line note on which data sources were available.'
+            echo '2) ./strategist-issue-url.txt — the created issue URL on one line.'
             echo '__EOF__'
           } >> "$GITHUB_ENV"
 
@@ -38,14 +60,15 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_bots: 'github-actions'
           prompt: ${{ env.PROMPT }}
           claude_args: >-
             --model claude-sonnet-4-6
-            --allowedTools "Read,Grep,Glob,Bash(gh:*)"
+            --allowedTools "Read,Write,Grep,Glob,Bash(gh:*),Bash(az:*),Bash(curl:*)"
 
-      # Email notification via the existing Resend setup (same key the contact
-      # form uses). Best-effort: the issue is the source of truth.
-      - name: Email Arun
+      # Rich-HTML email via the existing Resend setup. Links to the issue and
+      # embeds the ranked summary. Best-effort: the issue is the source of truth.
+      - name: Email Arun (rich HTML)
         if: ${{ success() }}
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -53,8 +76,24 @@ jobs:
           EMAIL_FROM: ${{ secrets.CONTACT_EMAIL_FROM }}
         run: |
           if [ -z "$RESEND_API_KEY" ]; then echo "No RESEND_API_KEY — skipping email."; exit 0; fi
-          curl -s -X POST https://api.resend.com/emails \
-            -H "Authorization: Bearer $RESEND_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{\"from\":\"$EMAIL_FROM\",\"to\":\"$EMAIL_TO\",\"subject\":\"Weekly portfolio PRD proposal is ready\",\"text\":\"The Strategist opened this week's PRD proposal issue on GitHub. Review and reply /approve to start the dev loop.\"}" \
-            || echo "Email send failed (non-fatal)."
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ISSUE_URL="$(head -n1 strategist-issue-url.txt 2>/dev/null || true)"
+          SUMMARY="$(cat strategist-summary.html 2>/dev/null || echo '<p>This week’s PRD proposal issue is ready on GitHub.</p>')"
+
+          LINKS="<p style=\"font:14px/1.5 Arial,sans-serif;margin:0 0 12px\">"
+          if [ -n "$ISSUE_URL" ]; then LINKS="${LINKS}<a href=\"${ISSUE_URL}\" style=\"color:#185fa5;font-weight:bold\">Open the PRD proposal issue</a> &nbsp;&middot;&nbsp; "; fi
+          LINKS="${LINKS}<a href=\"${RUN_URL}\" style=\"color:#185fa5;font-weight:bold\">View the run</a></p>"
+          APPROVE="<p style=\"font:14px/1.5 Arial,sans-serif;color:#555\">Reply <code>/approve</code> on the issue to turn the chosen PRD into Notion tasks and start the dev loop.</p>"
+
+          HTML="<div style=\"font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:680px\"><h2 style=\"margin:0 0 4px\">Weekly portfolio PRD proposal</h2>${LINKS}<hr style=\"border:none;border-top:1px solid #ddd\">${SUMMARY}${APPROVE}</div>"
+
+          jq -n \
+            --arg from "$EMAIL_FROM" \
+            --arg to "$EMAIL_TO" \
+            --arg subject "[portfolio] Weekly PRD proposal — $(date -u +%Y-%m-%d)" \
+            --arg html "$HTML" \
+            '{from:$from, to:$to, subject:$subject, html:$html}' \
+          | curl -s -X POST https://api.resend.com/emails \
+              -H "Authorization: Bearer $RESEND_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d @- || echo "Email send failed (non-fatal)."

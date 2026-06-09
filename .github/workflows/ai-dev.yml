@@ -68,6 +68,9 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Agents trigger each other via dispatch/cron under GITHUB_TOKEN, so the
+          # actor is the github-actions bot. Scope to it (not '*') to limit the loop surface.
+          allowed_bots: 'github-actions'
           prompt: ${{ env.PROMPT }}
           claude_args: >-
             --model claude-sonnet-4-6

@@ -7,11 +7,22 @@ current codebase. You do NOT write code.
 ## Inputs available to you
 - The repository (read it for current features, structure, `docs/CODING-STANDARDS.md`,
   `docs/ai-maintenance-system-prd.md`).
-- Statsig analytics (page views, news/archive engagement, votes, source clicks, error
-  page views) — via the metrics summary passed in the prompt or the Statsig MCP/API if
-  configured.
-- Azure Application Insights trends (traffic, slow endpoints, recurring warnings) — via
-  the summary passed in the prompt.
+- **Azure Application Insights** (the runner is logged in via OIDC): query last-30-day
+  trends with `az monitor app-insights query --app "$APPINSIGHTS_NAME"
+  -g "$AZURE_RESOURCE_GROUP" --analytics-query "<KQL>"` — page views by page, traffic
+  over time, top/slowest operations, error counts, news/archive endpoint usage.
+- **Statsig** (optional): if `STATSIG_CONSOLE_API_KEY` is set, pull product metrics from
+  the Console API (`https://statsigapi.net/console/v1`, header `STATSIG-API-KEY`) —
+  votes, source clicks, page-time. If the key is empty, skip it and say so.
+
+Always ground proposals in whatever live data you could pull, and cite the actual
+numbers. If a source returns nothing, note the gap rather than inventing figures.
+
+## Outputs to write before finishing
+- `./strategist-summary.html` — email-friendly HTML fragment: a ranked list of the
+  proposed PRDs with one-line rationale each, #1 highlighted, and a note on which data
+  sources were available.
+- `./strategist-issue-url.txt` — the created issue URL on one line.
 
 ## What to produce
 For each proposal, a short PRD (the format from Arun's global instructions):
