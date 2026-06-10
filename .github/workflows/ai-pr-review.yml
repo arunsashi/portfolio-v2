@@ -32,9 +32,11 @@ jobs:
             echo 'PROMPT<<__EOF__'
             cat docs/agents/pr-review.md
             echo ''
-            echo "Review pull request #${{ github.event.pull_request.number }} in this repo now."
-            echo "Use the gh CLI to read the diff and to post review comments / your verdict."
-            echo "Approve only if it fully meets the standards and CI is green; otherwise request changes with specific comments."
+            echo "Review pull request #${{ github.event.pull_request.number }} in this repo now. Use the gh CLI to read the diff and post comments."
+            echo 'Record your verdict with BOTH a formal review and a label (the label drives the dev<->review loop):'
+            echo '- APPROVE: gh pr review <pr> --approve  AND  gh pr edit <pr> --add-label agent-approved --remove-label changes-requested (create labels if missing: gh label create agent-approved --color 0E8A16 2>/dev/null || true).'
+            echo '- REQUEST CHANGES: gh pr review <pr> --request-changes with specific comments  AND  gh pr edit <pr> --add-label changes-requested --remove-label agent-approved (gh label create changes-requested --color D93F0B 2>/dev/null || true).'
+            echo 'Approve only if it fully meets docs/CODING-STANDARDS.md and CI is green. Any blocking issue => request changes (the dev agent will fix and re-push automatically).'
             echo '__EOF__'
           } >> "$GITHUB_ENV"
 
@@ -42,7 +44,8 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          allowed_bots: 'github-actions'
+          # The PR is opened by the app bot (ai-dev), so allow bot-initiated runs.
+          allowed_bots: '*'
           prompt: ${{ env.PROMPT }}
           claude_args: >-
             --model claude-sonnet-4-6

@@ -1,0 +1,142 @@
+name: ai-pr-gate
+
+# Drives the dev <-> e2e/pr-review loop on a PR.
+# On each signal (e2e finished, pr-review finished, or a human review) it reads
+# the PR's state and either:
+#   - dispatches ai-dev in FIX mode (e2e failed OR changes requested), or
+#   - when e2e is green AND the review agent approved, emails Arun that the PR
+#     is ready for his review (once).
+# Verdict is tracked by labels the pr-review agent sets (agent-approved /
+# changes-requested) so it doesn't deadlock on the 2-approval branch rule.
+# Plain gh + a rich-HTML email — no AI tokens here.
+on:
+  workflow_run:
+    workflows: ['e2e', 'ai-pr-review']
+    types: [completed]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write       # repository_dispatch
+  pull-requests: write  # labels
+
+concurrency:
+  group: pr-gate-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      EMAIL_TO: ${{ secrets.CONTACT_EMAIL_TO }}
+      EMAIL_FROM: ${{ secrets.CONTACT_EMAIL_FROM }}
+      MAX_FIX_ATTEMPTS: '4'   # auto-fix iterations before escalating to a human
+    steps:
+      - name: Resolve PR number
+        id: pr
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request_review" ]; then
+            echo "num=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            N=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[0].number' 2>/dev/null || true)
+            echo "num=${N:-}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Evaluate PR state and act
+        if: ${{ steps.pr.outputs.num != '' && steps.pr.outputs.num != 'null' }}
+        run: |
+          set -euo pipefail
+          PR="${{ steps.pr.outputs.num }}"
+          DATA=$(gh pr view "$PR" --repo "$REPO" \
+            --json number,title,url,headRefName,isDraft,state,reviewDecision,labels,statusCheckRollup)
+
+          STATE=$(printf '%s' "$DATA" | jq -r '.state')
+          if [ "$STATE" != "OPEN" ]; then echo "PR #$PR is $STATE — skipping."; exit 0; fi
+
+          BRANCH=$(printf '%s' "$DATA" | jq -r '.headRefName')
+          URL=$(printf '%s' "$DATA"    | jq -r '.url')
+          TITLE=$(printf '%s' "$DATA"  | jq -r '.title')
+          DECISION=$(printf '%s' "$DATA" | jq -r '.reviewDecision // ""')
+
+          has_label() { printf '%s' "$DATA" | jq -e --arg n "$1" 'any(.labels[]; .name==$n)' >/dev/null; }
+
+          # Already escalated to a human — stop looping.
+          if has_label needs-human; then echo "PR #$PR is flagged needs-human — gate idle."; exit 0; fi
+
+          # e2e check conclusion(s) for this PR head.
+          E2E=$(printf '%s' "$DATA" | jq -r '[.statusCheckRollup[]? | select((.workflowName // "")=="e2e")] | map(.conclusion // .status) | join(",")')
+
+          CHANGES=no
+          if [ "$DECISION" = "CHANGES_REQUESTED" ] || has_label changes-requested; then CHANGES=yes; fi
+          E2E_FAILED=no;  printf '%s' "$E2E" | grep -qi 'FAILURE' && E2E_FAILED=yes
+          E2E_PASSED=no;  { printf '%s' "$E2E" | grep -qi 'SUCCESS' && [ "$E2E_FAILED" = no ]; } && E2E_PASSED=yes
+
+          # Current auto-fix attempt count (from a fix-attempt-N label).
+          ATTEMPTS=$(printf '%s' "$DATA" | jq -r '[.labels[].name | select(startswith("fix-attempt-"))][0] // "fix-attempt-0" | ltrimstr("fix-attempt-")' )
+          case "$ATTEMPTS" in (*[!0-9]*|'') ATTEMPTS=0;; esac
+
+          echo "PR #$PR  branch=$BRANCH  e2e=[$E2E]  decision=$DECISION  changes=$CHANGES  attempts=$ATTEMPTS"
+
+          # --- FIX path -------------------------------------------------------
+          if [ "$E2E_FAILED" = yes ] || [ "$CHANGES" = yes ]; then
+            # Dedupe: don't pile on while a fix is already dispatched for this round.
+            if has_label fixing; then echo "A fix is already in flight — skipping."; exit 0; fi
+            gh pr edit "$PR" --repo "$REPO" --remove-label ready-for-arun 2>/dev/null || true
+
+            if [ "$ATTEMPTS" -ge "$MAX_FIX_ATTEMPTS" ]; then
+              gh label create needs-human --color B60205 --description "Auto-fix gave up; needs Arun" 2>/dev/null || true
+              gh pr edit "$PR" --repo "$REPO" --add-label needs-human --remove-label fixing 2>/dev/null || true
+              echo "Reached $MAX_FIX_ATTEMPTS attempts — escalating PR #$PR to human."
+              if [ -n "${RESEND_API_KEY:-}" ]; then
+                HTML="<div style=\"font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:680px\"><h2 style=\"margin:0 0 8px\">PR needs your help</h2><p style=\"font:14px/1.6 Arial,sans-serif\"><b>$TITLE</b> (#$PR) — the dev agent tried <b>$MAX_FIX_ATTEMPTS</b> automated fixes but e2e/review still isn't clean. Auto-fixing has stopped.</p><p style=\"font:14px/1.6 Arial,sans-serif\"><a href=\"$URL\" style=\"color:#185fa5;font-weight:bold\">Open the pull request</a> to take a look.</p></div>"
+                jq -n --arg from "$EMAIL_FROM" --arg to "$EMAIL_TO" --arg subject "[portfolio] PR #$PR needs your help (auto-fix gave up)" --arg html "$HTML" '{from:$from,to:$to,subject:$subject,html:$html}' \
+                | curl -s -X POST https://api.resend.com/emails -H "Authorization: Bearer $RESEND_API_KEY" -H "Content-Type: application/json" -d @- || true
+              fi
+              exit 0
+            fi
+
+            NEXT=$((ATTEMPTS + 1))
+            gh label create "fix-attempt-$NEXT" --color FBCA04 --description "Auto-fix iteration $NEXT" 2>/dev/null || true
+            gh label create fixing --color FEF2C0 --description "A dev-agent fix is in flight" 2>/dev/null || true
+            [ "$ATTEMPTS" -gt 0 ] && gh pr edit "$PR" --repo "$REPO" --remove-label "fix-attempt-$ATTEMPTS" 2>/dev/null || true
+            gh pr edit "$PR" --repo "$REPO" --add-label "fix-attempt-$NEXT" --add-label fixing 2>/dev/null || true
+
+            REASON="fix needed (e2e=[$E2E], review_decision=$DECISION, changes=$CHANGES); attempt $NEXT of $MAX_FIX_ATTEMPTS"
+            gh api "repos/$REPO/dispatches" -f event_type=ai-dev \
+              -F "client_payload[mode]=fix" \
+              -F "client_payload[pr]=$PR" \
+              -F "client_payload[branch]=$BRANCH" \
+              -F "client_payload[reason]=$REASON"
+            echo "Dispatched ai-dev FIX (attempt $NEXT) for PR #$PR."
+            exit 0
+          fi
+
+          # --- READY path -----------------------------------------------------
+          if [ "$E2E_PASSED" = yes ] && has_label agent-approved && ! has_label ready-for-arun; then
+            gh label create ready-for-arun --color 0E8A16 --description "e2e green + agent-approved; awaiting Arun" 2>/dev/null || true
+            gh pr edit "$PR" --repo "$REPO" --add-label ready-for-arun 2>/dev/null || true
+
+            if [ -n "${RESEND_API_KEY:-}" ]; then
+              HTML="<div style=\"font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:680px\"><h2 style=\"margin:0 0 8px\">PR ready for your review</h2><p style=\"font:14px/1.6 Arial,sans-serif\"><b>$TITLE</b> (#$PR) has passed the automated gate — e2e is green and the review agent approved. It's waiting on your review + merge.</p><p style=\"font:14px/1.6 Arial,sans-serif\"><a href=\"$URL\" style=\"color:#185fa5;font-weight:bold\">Open the pull request</a></p><p style=\"font:13px/1.5 Arial,sans-serif;color:#555\">Approve &amp; merge to ship it, or leave review comments (or Request changes) and the dev agent will iterate automatically.</p></div>"
+              jq -n --arg from "$EMAIL_FROM" --arg to "$EMAIL_TO" \
+                    --arg subject "[portfolio] PR #$PR ready for your review — $TITLE" \
+                    --arg html "$HTML" \
+                    '{from:$from,to:$to,subject:$subject,html:$html}' \
+              | curl -s -X POST https://api.resend.com/emails \
+                  -H "Authorization: Bearer $RESEND_API_KEY" \
+                  -H "Content-Type: application/json" -d @- \
+                  && echo "Emailed Arun: PR #$PR ready." || echo "Email failed (non-fatal)."
+            else
+              echo "No RESEND_API_KEY — labelled ready-for-arun, skipped email."
+            fi
+            exit 0
+          fi
+
+          echo "PR #$PR not actionable yet (waiting on e2e and/or review)."

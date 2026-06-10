@@ -60,19 +60,26 @@ jobs:
             echo "$PAYLOAD"
             echo "Manual inputs (if present): type=$WF_TYPE summary=$WF_SUMMARY card_id=$WF_CARD"
             echo ''
-            echo 'Implement the change now: create the branch, code it, verify (lint/tsc/build), then PUSH the branch to origin (git push -u origin <branch>) and open a PR with `gh pr create`. Confirm the branch exists on origin before finishing. Then request QA. Do NOT merge.'
+            echo 'TWO MODES — check the ticket context:'
+            echo 'A) If it has "mode":"fix" with a "pr" and "branch": this is a FIX iteration on an existing PR. Check out that branch (git fetch origin <branch> && git checkout <branch>). Read what to fix: run `gh pr checks <pr>` and inspect the failing e2e run (gh run view --log), and read unresolved review comments (gh pr view <pr> --json reviews,comments and gh api .../comments). Make the smallest correct fix, verify (lint/tsc/build), and PUSH to the SAME branch (git push). Do NOT open a new branch or PR. As the LAST step, clear the in-flight guard so the gate can evaluate the new push: `gh pr edit <pr> --remove-label fixing`. Re-running e2e + pr-review happens automatically. Do NOT merge.'
+            echo 'B) Otherwise it is a NEW task: create the branch, code it, verify (lint/tsc/build), PUSH to origin (git push -u origin <branch>), open a PR with `gh pr create` (PR body must include the full Notion card URL and "Tracking issue: #N"), then HAND TO QA by labelling the PR: ensure the label exists (gh label create needs-qa --color BFD4F2 --description "Ready for QA e2e" 2>/dev/null || true) and add it (gh pr edit <pr> --add-label needs-qa). Do NOT merge.'
             echo 'Update the Notion card throughout: set it to In progress and record the branch name when you start, then set its PR property to the PR URL once the PR is open — so the branch and PR are both visible on the card.'
             echo 'In the PR body, if the ticket context has an "issue" field, add a line "Tracking issue: #<that number>" so the QA/e2e agent can close it once e2e passes.'
             echo '__EOF__'
           } >> "$GITHUB_ENV"
 
+      # Mint a GitHub App installation token. Unlike GITHUB_TOKEN, events made
+      # with an app token DO trigger downstream workflows (e2e / pr-review / qa).
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Use a PAT (not GITHUB_TOKEN) so the PR + label this agent creates
-          # actually trigger the downstream e2e / pr-review / qa workflows.
-          # GITHUB_TOKEN-made events do NOT spawn new workflow runs.
-          github_token: ${{ secrets.GH_PAT }}
+          github_token: ${{ steps.app-token.outputs.token }}
           allowed_bots: 'github-actions'
           prompt: ${{ env.PROMPT }}
           claude_args: >-

@@ -30,15 +30,29 @@ full repo context.
    QA/e2e and the post-deploy closer can find and close it).
 7. **Update the Notion card with the PR link** — set its `PR` (url) property to the PR
    URL (and confirm the branch is recorded from step 2). The card should now show both
-   the branch and the PR so the work is traceable from Notion. Then **hand to QA**
-   (signal per the workflow) — do not merge.
+   the branch and the PR so the work is traceable from Notion.
+8. **Hand to QA: label the PR `needs-qa`** — this label is the trigger for the QA/e2e
+   workflow, so the hand-off isn't real until it's applied. Create the label if missing
+   (`gh label create needs-qa ... || true`) then `gh pr edit <pr> --add-label needs-qa`.
+   Do not merge.
+
+## Fix mode (automated loop)
+You may be dispatched in **fix mode** (ticket context has `mode: fix` + `pr`/`branch`)
+by `ai-pr-gate` whenever e2e fails or changes are requested. In that case: check out
+the existing branch, read the failing e2e logs (`gh pr checks`, `gh run view --log`)
+and the unresolved review comments, make the smallest correct fix, verify
+(lint/tsc/build), and **re-push to the same branch** — never a new branch/PR. As your
+last step, clear the loop guard: `gh pr edit <pr> --remove-label fixing`. The push
+re-runs e2e + pr-review. This repeats (capped at `MAX_FIX_ATTEMPTS`, default 4, after
+which the gate flags `needs-human` and emails Arun) until e2e is green and the review
+agent approves; then `ai-pr-gate` emails Arun that it's ready. You never merge.
 
 ## Review loop
 - When QA fails the change, read the QA notes, fix, and **re-push to the same branch**.
-- When the PR-Review agent or Arun leaves a comment, address it and re-push. Re-review
-  repeats until **both** approve.
-- **Only after QA is green AND both Arun and the PR-Review agent have approved** do you
-  rebase on `main` and merge. Never merge on one approval. Never force-deploy.
+- When the PR-Review agent or Arun requests changes, address them and re-push.
+  Re-review repeats automatically until **both** approve.
+- **Only after both Arun and the PR-Review agent have approved** do you rebase on
+  `main` and merge. Never merge on one approval. Never force-deploy.
 
 ## Guardrails
 - No new runtime dependency without justification in the PR description.
