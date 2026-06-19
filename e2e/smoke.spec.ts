@@ -1,9 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
- * Baseline smoke suite — structural assertions that must always hold, stable
- * regardless of the live news/profile data. The QA agent extends e2e coverage
- * per change in sibling spec files.
+ * Baseline smoke suite — structural assertions that must always hold. Runs
+ * against deterministic API fixtures (see fixtures.ts) so the app boots
+ * regardless of network, rather than depending on the live backend. The QA
+ * agent extends e2e coverage per change in sibling spec files.
  */
 
 test.describe('home', () => {
