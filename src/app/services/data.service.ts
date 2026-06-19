@@ -50,7 +50,10 @@ export class DataService {
   }
 
   getProject(slug: string): Observable<Project | undefined> {
-    return this.getProjects().pipe(map((projects) => projects.find((p) => p.slug === slug)));
+    return this.getProjects().pipe(
+      map((projects) => projects.find((p) => p.slug === slug)),
+      catchError(() => of(undefined)),
+    );
   }
 
   getExperience(): Observable<Experience[]> {
