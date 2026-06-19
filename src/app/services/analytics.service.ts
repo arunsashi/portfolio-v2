@@ -59,6 +59,11 @@ export class AnalyticsService {
     this.log('linkly_click', label, { url });
   }
 
+  /** A project detail page was opened (route visit), keyed by slug. */
+  projectDetailView(slug: string): void {
+    this.log('project_detail_view', slug);
+  }
+
   /** News page opened (route visit). */
   newsPageView(): void {
     this.log('news_page_view');
