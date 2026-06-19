@@ -45,9 +45,17 @@ test.describe('project detail', () => {
 
     const { slug, name } = projects[0];
     await page.goto(`/projects/${slug}`);
-    test.skip(await appFellToErrorPage(page), 'App could not load live data in this environment.');
 
+    // Wait for the app to settle on either the detail h1 or the global error
+    // page (which renders asynchronously after a failed bootstrap), then decide.
     const h1 = page.getByRole('heading', { level: 1 });
+    await expect(h1).toBeVisible();
+    const heading = ((await h1.textContent()) ?? '').trim();
+    test.skip(
+      heading === 'Houston, we have a problem.',
+      'App could not load live data in this environment.',
+    );
+
     await expect(h1).toHaveCount(1);
     await expect(h1).toHaveText(name);
 
