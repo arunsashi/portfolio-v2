@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, input, type OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { RevealDirective } from '@core/directives/reveal.directive';
@@ -13,7 +13,7 @@ import { switchMap } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './project-detail.component.html',
 })
-export class ProjectDetailComponent implements OnInit {
+export class ProjectDetailComponent {
   private readonly data = inject(DataService);
   private readonly analytics = inject(AnalyticsService);
   readonly slug = input.required<string>();
@@ -21,7 +21,12 @@ export class ProjectDetailComponent implements OnInit {
     toObservable(this.slug).pipe(switchMap((slug) => this.data.getProject(slug))),
   );
 
-  ngOnInit(): void {
-    this.analytics.projectDetailView(this.slug());
+  constructor() {
+    // Fires on every slug change — `withComponentInputBinding()` reuses the
+    // component instance across `/projects/:slug` navigations, so a lifecycle
+    // hook would miss subsequent views.
+    effect(() => {
+      this.analytics.projectDetailView(this.slug());
+    });
   }
 }
