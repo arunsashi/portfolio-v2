@@ -1,4 +1,4 @@
-import {provideHttpClient, withFetch, withInterceptors} from '@angular/common/http';
+import {provideHttpClient, withInterceptors} from '@angular/common/http';
 import {type ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection,} from '@angular/core';
 import {provideRouter, withComponentInputBinding, withInMemoryScrolling} from '@angular/router';
 import {API_DATA_SOURCE, DATA_SOURCE, PLACEHOLDER_DATA_SOURCE} from '@core/config/data-source.config';
@@ -17,7 +17,7 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'top' }),
     ),
-    provideHttpClient(withFetch(), withInterceptors([loadingInterceptor])),
+    provideHttpClient(withInterceptors([loadingInterceptor])),
     ...provideStatsig(),
     // Production ALWAYS uses the live API (placeholder JSON is gitignored and
     // never deployed). Dev defaults to local placeholder JSON; switch to
