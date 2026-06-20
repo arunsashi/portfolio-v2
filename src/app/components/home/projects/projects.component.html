@@ -39,7 +39,26 @@
           </div>
         }
 
-        @if (project.url) {
+        @if (project.details?.summary) {
+          <div class="mt-6 flex flex-col gap-3">
+            <a
+              [routerLink]="['/projects', project.slug]"
+              [attr.aria-label]="'View details for ' + project.name"
+              class="hover-lift flex items-center justify-center gap-2 border-2 border-line bg-accent-blue px-4 py-3 font-black uppercase text-ink shadow-hard"
+              >View Details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i
+            ></a>
+            @if (project.url) {
+              <a
+                [href]="project.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                [attr.aria-label]="project.name + ' — open live link in a new tab'"
+                class="hover-lift self-start border-2 border-line bg-surface px-3 py-1.5 text-xs font-black uppercase text-ink shadow-hard-sm"
+                >&uarr; Live <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i
+              ></a>
+            }
+          </div>
+        } @else if (project.url) {
           <a
             [href]="project.url"
             target="_blank"
