@@ -13,12 +13,11 @@
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",
-    "baseUrl": ".",
     "paths": {
-      "@core/*": ["src/app/*"],
-      "@shared/*": ["src/app/components/shared/*"],
-      "@features/*": ["src/app/components/*"],
-      "@env": ["src/environments/environment"]
+      "@core/*": ["./src/app/*"],
+      "@shared/*": ["./src/app/components/shared/*"],
+      "@features/*": ["./src/app/components/*"],
+      "@env": ["./src/environments/environment"]
     }
   },
   "angularCompilerOptions": {
